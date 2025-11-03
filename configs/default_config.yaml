@@ -1,0 +1,51 @@
+# Default configuration for neural network training
+
+# Dataset configuration
+dataset:
+  name: 'fashion_mnist'  # Options: 'fashion_mnist', 'cifar10'
+  data_dir: './data'
+  val_split: 0.2
+  normalize: true
+  flatten: true
+
+# Model architecture
+model:
+  input_size: 784  # 28*28 for Fashion-MNIST, 3072 for CIFAR-10
+  hidden_layers: [128, 64]  # List of hidden layer sizes
+  output_size: 10
+  activation: 'relu'  # Options: 'relu', 'sigmoid', 'tanh'
+  output_activation: 'softmax'
+  weight_init: 'xavier'  # Options: 'random', 'xavier', 'he'
+
+# Training configuration
+training:
+  num_epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  optimizer: 'adam'  # Options: 'sgd', 'momentum', 'rmsprop', 'adam'
+  loss: 'cross_entropy'  # Options: 'mse', 'cross_entropy'
+
+# Regularization
+regularization:
+  l2_lambda: 0.0001
+
+# Optimizer-specific parameters
+optimizer_params:
+  momentum: 0.9  # For momentum SGD
+  beta1: 0.9  # For Adam
+  beta2: 0.999  # For Adam
+  decay_rate: 0.9  # For RMSprop
+
+# Experiment tracking
+wandb:
+  project: 'neural-network-numpy'
+  entity: null  # Set your WandB username/team
+  experiment_name: 'baseline'
+  log_interval: 10  # Log every N batches
+  save_model: true
+
+# Other settings
+random_seed: 42
+verbose: true
+save_dir: './results'
+
