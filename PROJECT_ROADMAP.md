@@ -26,7 +26,7 @@ This document provides a week-by-week guide for completing the neural network pr
 - [x] Install dependencies (`pip install -r requirements.txt`)
 - [x] Create WandB account
 - [x] Run `wandb login`
-- [ ] Test Jupyter notebooks work
+- [x] Test Jupyter notebooks work
 
 #### Day 3-4: Theory Review
 - [ ] Review neural network basics
