@@ -93,14 +93,27 @@ DeepLearningGroup71/
 
 ## Getting Started
 
+### Requirements
+- Python 3.12+ (recommended) or Python 3.10+
+- pip (latest version)
+- Git
+
 ### Installation
 ```bash
-# Create a virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Create a virtual environment with Python 3.12
+python3.12 -m venv deeplearning
+
+# Activate the virtual environment
+source deeplearning/bin/activate  # On Windows: deeplearning\Scripts\activate
+
+# Upgrade pip
+pip install --upgrade pip
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Install Jupyter kernel
+python -m ipykernel install --user --name=deeplearning --display-name="Deep Learning (3.12)"
 ```
 
 ### Setting up Weights & Biases

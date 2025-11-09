@@ -1,30 +1,30 @@
-# Core dependencies
-numpy>=2.3.4
-matplotlib>=3.10.7
-seaborn>=0.13.2
+# Core dependencies (Python 3.12 compatible)
+numpy>=1.26.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
 
 # Experiment tracking
-wandb>=0.22.3
+wandb>=0.16.0
 
 # Data handling
-scikit-learn>=1.7.2
+scikit-learn>=1.4.0
 
 # Jupyter notebooks
-jupyter>=1.1.1
-ipykernel>=7.1.0
+jupyter>=1.0.0
+ipykernel>=6.28.0
 
 # Visualization
-plotly>=6.4.0
+plotly>=5.18.0
 
 # Configuration
-pyyaml>=6.0.3
+pyyaml>=6.0.1
 
 # Progress bars
-tqdm>=4.67.1
+tqdm>=4.66.0
 
 # For downloading datasets
-requests>=2.32.5
+requests>=2.31.0
 
 # Testing
-pytest>=9.0.0
+pytest>=8.0.0
 
