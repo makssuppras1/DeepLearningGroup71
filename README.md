@@ -134,6 +134,96 @@ wandb sweep experiments/sweep_config.py
 wandb agent <sweep_id>
 ```
 
+## Development Workflow
+
+### Git Branching Strategy
+
+We use a feature-branch workflow to organize development:
+
+```
+main (stable, production-ready code)
+  ├── week2-implementation (current development)
+  ├── feature/activation-functions
+  ├── feature/loss-functions
+  └── feature/optimizers
+```
+
+### Creating a New Branch
+
+```bash
+# Always start from main
+git checkout main
+git pull origin main
+
+# Create and switch to a new feature branch
+git checkout -b feature/your-feature-name
+```
+
+### Making Changes
+
+```bash
+# Make your changes to the code
+# ... edit files ...
+
+# Check what changed
+git status
+
+# Stage your changes
+git add src/activations.py  # specific file
+# or
+git add .  # all changes
+
+# Commit with descriptive message
+git commit -m "feat: implement ReLU activation function
+
+- Added forward pass implementation
+- Added derivative computation
+- Added unit tests"
+
+# Push to GitHub
+git push origin feature/your-feature-name
+```
+
+### Commit Message Format
+
+Use conventional commits for clear history:
+
+- `feat:` - New feature (e.g., "feat: add Adam optimizer")
+- `fix:` - Bug fix (e.g., "fix: correct gradient calculation")
+- `docs:` - Documentation changes
+- `test:` - Adding or updating tests
+- `refactor:` - Code refactoring
+
+### Merging Changes
+
+```bash
+# When feature is complete, merge into main
+git checkout main
+git pull origin main
+git merge feature/your-feature-name
+
+# Push to GitHub
+git push origin main
+
+# Delete the feature branch (optional)
+git branch -d feature/your-feature-name
+```
+
+### Team Collaboration
+
+**Daily Workflow:**
+1. Start each day by pulling latest changes: `git pull origin main`
+2. Create a branch for your task
+3. Make changes and commit regularly
+4. Push your branch to share progress
+5. Create Pull Request when ready for review
+
+**Avoiding Conflicts:**
+- Pull from main frequently
+- Communicate with team about file changes
+- Keep branches short-lived (1-3 days)
+- Review and merge PRs promptly
+
 ## Experiment Tracking
 All experiments will be logged to Weights & Biases including:
 - Training and validation loss curves
