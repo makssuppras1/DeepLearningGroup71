@@ -21,11 +21,11 @@ This document provides a week-by-week guide for completing the neural network pr
 ### Tasks
 
 #### Day 1-2: Environment Setup
-- [ ] Clone repository
-- [ ] Set up virtual environment
-- [ ] Install dependencies (`pip install -r requirements.txt`)
-- [ ] Create WandB account
-- [ ] Run `wandb login`
+- [x] Clone repository
+- [x] Set up virtual environment
+- [x] Install dependencies (`pip install -r requirements.txt`)
+- [x] Create WandB account
+- [x] Run `wandb login`
 - [ ] Test Jupyter notebooks work
 
 #### Day 3-4: Theory Review

@@ -14,7 +14,7 @@ Welcome to the Neural Network from Scratch project! This guide will help you get
 ## Prerequisites
 
 Before starting, make sure you have:
-- Python 3.8 or higher installed
+- **Python 3.12+** (recommended) or Python 3.10+ installed
 - A code editor (VS Code, PyCharm, or Jupyter Notebook)
 - Basic understanding of Python programming
 - A GitHub account
@@ -40,23 +40,30 @@ A virtual environment keeps your project dependencies isolated.
 
 **On macOS/Linux:**
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+# Use Python 3.12 (recommended)
+python3.12 -m venv deeplearning
+source deeplearning/bin/activate
 ```
 
 **On Windows:**
 ```bash
-python -m venv venv
-venv\Scripts\activate
+python -m venv deeplearning
+deeplearning\Scripts\activate
 ```
 
-You should see `(venv)` at the beginning of your terminal prompt.
+You should see `(deeplearning)` at the beginning of your terminal prompt.
 
 ### Step 3: Install Dependencies
 
 ```bash
+# Upgrade pip first
 pip install --upgrade pip
+
+# Install all required packages
 pip install -r requirements.txt
+
+# Install Jupyter kernel
+python -m ipykernel install --user --name=deeplearning --display-name="Deep Learning (3.12)"
 ```
 
 This installs all necessary packages including NumPy, matplotlib, and Weights & Biases.
@@ -189,8 +196,22 @@ This will train a model and log results to WandB.
 **Solution:** Make sure you're in the project directory and the virtual environment is activated:
 ```bash
 cd DeepLearningGroup71
-source venv/bin/activate  # or venv\Scripts\activate on Windows
+source deeplearning/bin/activate  # or deeplearning\Scripts\activate on Windows
 ```
+
+### Issue: "No module named ipykernel"
+
+**Solution:** This means you're using the system Python instead of your virtual environment:
+```bash
+# ALWAYS activate the virtual environment first!
+source deeplearning/bin/activate
+
+# Then install/use packages
+pip install ipykernel
+python -m ipykernel install --user --name=deeplearning --display-name="Deep Learning (3.12)"
+```
+
+Check your prompt shows `(deeplearning)` at the beginning.
 
 ### Issue: Dimension mismatch in matrix operations
 

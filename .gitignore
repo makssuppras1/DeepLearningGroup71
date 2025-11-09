@@ -90,3 +90,4 @@ results/plots/*.jpg
 !results/logs/.gitkeep
 !data/.gitkeep
 
+deeplearning/
