@@ -49,7 +49,6 @@ def sigmoid_derivative(x: np.ndarray) -> np.ndarray:
 def tanh(x: np.ndarray) -> np.ndarray:
     """
     Tanh activation function.
-    
     Formula: f(x) = np.tanh(x)
     """
     return np.tanh(x)

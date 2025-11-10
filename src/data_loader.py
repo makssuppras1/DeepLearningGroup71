@@ -304,12 +304,8 @@ CIFAR10_CLASSES = [
 def get_class_names(dataset: str) -> list:
     """
     Get class names for a dataset.
-    
-    Args:
-        dataset: Dataset name ('fashion_mnist' or 'cifar10')
-        
-    Returns:
-        List of class names for the dataset
+    Args: dataset: Dataset name ('fashion_mnist' or 'cifar10')
+    Returns: List of class names for the dataset
     """
     if dataset.lower() == 'fashion_mnist':
         return FASHION_MNIST_CLASSES

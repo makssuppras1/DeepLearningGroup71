@@ -26,9 +26,9 @@ This document provides a week-by-week guide for completing the neural network pr
 - [x] Review neural network basics
 - [x] Understand forward propagation
 - [x] Understand backpropagation
-- [ ] Review activation functions (ReLU, Sigmoid, Tanh)
-- [ ] Review loss functions (Cross-Entropy)
-- [ ] Understand optimizers (SGD, Adam)
+- [x] Review activation functions (ReLU, Sigmoid, Tanh)
+- [x] Review loss functions (Cross-Entropy)
+- [x] Understand optimizers (SGD, Adam)
 
 **Resources:**
 - 3Blue1Brown Neural Network series
