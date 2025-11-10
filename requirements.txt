@@ -28,3 +28,7 @@ requests>=2.31.0
 # Testing
 pytest>=8.0.0
 
+# PyTorch (for reference and comparison)
+torch>=2.1.0
+torchvision>=0.16.0
+

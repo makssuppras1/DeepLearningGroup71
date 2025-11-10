@@ -4,12 +4,6 @@ This document provides a week-by-week guide for completing the neural network pr
 
 ## Overview
 
-**Total Duration**: 4-6 weeks  
-**Team Size**: 3-5 people  
-**Difficulty**: Intermediate to Advanced
-
----
-
 ## Week 1: Setup & Understanding
 
 ### Goals
@@ -29,9 +23,9 @@ This document provides a week-by-week guide for completing the neural network pr
 - [x] Test Jupyter notebooks work
 
 #### Day 3-4: Theory Review
-- [ ] Review neural network basics
-- [ ] Understand forward propagation
-- [ ] Understand backpropagation
+- [x] Review neural network basics
+- [x] Understand forward propagation
+- [x] Understand backpropagation
 - [ ] Review activation functions (ReLU, Sigmoid, Tanh)
 - [ ] Review loss functions (Cross-Entropy)
 - [ ] Understand optimizers (SGD, Adam)
@@ -42,8 +36,8 @@ This document provides a week-by-week guide for completing the neural network pr
 
 #### Day 5-7: Data Exploration
 - [ ] Complete `notebooks/01_data_exploration.ipynb`
-- [ ] Download Fashion-MNIST dataset
-- [ ] Download CIFAR-10 dataset
+- [x] Download Fashion-MNIST dataset
+- [x] Download CIFAR-10 dataset
 - [ ] Visualize sample images
 - [ ] Understand data shapes and preprocessing needs
 - [ ] Plan data preprocessing pipeline
@@ -52,8 +46,6 @@ This document provides a week-by-week guide for completing the neural network pr
 - ✅ Working development environment
 - ✅ Completed data exploration notebook
 - ✅ Team roles assigned
-
----
 
 ## Week 2: Core Components
 
