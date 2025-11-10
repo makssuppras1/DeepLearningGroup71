@@ -38,7 +38,6 @@ f'(x) = 1 if x > 0, else 0
 ```
 f(x) = 1 / (1 + exp(-x))
 ```
-
 **Derivative:**
 ```
 f'(x) = f(x) * (1 - f(x))

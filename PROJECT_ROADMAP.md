@@ -35,12 +35,12 @@ This document provides a week-by-week guide for completing the neural network pr
 - IMPLEMENTATION_GUIDE.md in this repository
 
 #### Day 5-7: Data Exploration
-- [ ] Complete `notebooks/01_data_exploration.ipynb`
+- [x] Complete `notebooks/01_data_exploration.ipynb`
 - [x] Download Fashion-MNIST dataset
 - [x] Download CIFAR-10 dataset
-- [ ] Visualize sample images
-- [ ] Understand data shapes and preprocessing needs
-- [ ] Plan data preprocessing pipeline
+- [x] Visualize sample images
+- [x] Understand data shapes and preprocessing needs
+- [x] Plan data preprocessing pipeline
 
 ### Deliverables
 - ✅ Working development environment
