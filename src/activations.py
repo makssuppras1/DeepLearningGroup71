@@ -1,12 +1,9 @@
 """
 Activation functions and their derivatives.
-
 Implement various activation functions used in neural networks.
 Each function should have both forward and backward (derivative) computations.
 """
-
 import numpy as np
-
 
 def relu(x: np.ndarray) -> np.ndarray:
     """
@@ -14,7 +11,6 @@ def relu(x: np.ndarray) -> np.ndarray:
     Formula: f(x) = max(0, x)
     """
     return np.maximum(0, x)
-
 
 def relu_derivative(x: np.ndarray) -> np.ndarray:
     """
@@ -26,25 +22,26 @@ def relu_derivative(x: np.ndarray) -> np.ndarray:
     """
     return (x > 0).astype(float)
 
-
 def sigmoid(x: np.ndarray) -> np.ndarray:
     """
-    Sigmoid activation function.
-    Formula: f(x) = 1 / (1 + np.exp(-x))
+    Sigmoid activation function with numerical stability.
+    Formula: f(x) = 1 / (1 + exp(-x))
     Args: x: Input numpy array
-    Returns: Sigmoid activation function
+    Returns: Sigmoid activation output (values between 0 and 1)
     """
-    return 1 / (1 + np.exp(-x))
-
+    # Clip to prevent overflow
+    x_clipped = np.clip(x, -500, 500)
+    return 1 / (1 + np.exp(-x_clipped))
 
 def sigmoid_derivative(x: np.ndarray) -> np.ndarray:
     """
     Derivative of sigmoid activation.
     Returns the product of the sigmoid function and its complement.
     Formula: f'(x) = f(x) * (1 - f(x))
+    Args: x: Input numpy array
+    Returns: Derivative of sigmoid activation
     """
     return sigmoid(x) * (1 - sigmoid(x))
-
 
 def tanh(x: np.ndarray) -> np.ndarray:
     """
@@ -52,7 +49,6 @@ def tanh(x: np.ndarray) -> np.ndarray:
     Formula: f(x) = np.tanh(x)
     """
     return np.tanh(x)
-
 
 def tanh_derivative(x: np.ndarray) -> np.ndarray:
     """
@@ -62,14 +58,18 @@ def tanh_derivative(x: np.ndarray) -> np.ndarray:
     """
     return 1 - np.tanh(x)**2
 
-
 def softmax(x: np.ndarray) -> np.ndarray:
     """
-    Softmax activation function for output layer.
+    Softmax activation function for output layer with numerical stability.
     Returns a probability distribution over classes.
-    Formula: f(x_i) = exp(x_i) / sum(exp(x_j)) for each class i.
+    Formula: f(x_i) = exp(x_i - max(x)) / sum(exp(x_j - max(x)))
+    Args: x: Input numpy array (shape: batch_size x num_classes)
+    Returns: Probability distribution (values sum to 1 along axis=1)
     """
-    return np.exp(x) / np.sum(np.exp(x), axis=1, keepdims=True)
+    # Subtract max for numerical stability
+    x_shifted = x - np.max(x, axis=1, keepdims=True)
+    exp_x = np.exp(x_shifted)
+    return exp_x / np.sum(exp_x, axis=1, keepdims=True)
 
 
 def softmax_derivative(x: np.ndarray) -> np.ndarray:
@@ -96,7 +96,6 @@ ACTIVATION_DERIVATIVES = {
     'softmax': softmax_derivative
 }
 
-
 def get_activation(name: str):
     """
     Get activation function by name.
@@ -106,7 +105,6 @@ def get_activation(name: str):
     if name not in ACTIVATION_FUNCTIONS:
         raise ValueError(f"Unknown activation function: {name}")
     return ACTIVATION_FUNCTIONS[name]
-
 
 def get_activation_derivative(name: str):
     """ 
