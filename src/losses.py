@@ -6,6 +6,33 @@ Implement various loss functions and their derivatives for backpropagation.
 
 import numpy as np
 
+def min_log_likelihood(y_pred: np.ndarray, y_true: np.ndarray) -> float:
+    """
+    Minimum Log-Likelihood loss.
+    
+    Formula: MLL = -sum(log(Pr(y_true | y_pred)))
+    
+    Args:
+        y_pred: Predicted probabilities of shape (batch_size, num_classes)
+        y_true: True labels (one-hot encoded) of shape (batch_size, num_classes)
+        
+    Returns:
+        MLL loss value (scalar)
+    """
+    eps = 1e-12
+    y_pred_clipped = np.clip(y_pred, eps, 1.0 - eps)
+    
+    # Ensure batch dimension
+    if y_pred_clipped.ndim == 1:
+        y_pred_clipped = y_pred_clipped.reshape(1, -1)
+        y_true = y_true.reshape(1, -1)
+    
+    # Compute negative log-likelihood: -sum(y_true * log(y_pred))
+    MLL = -np.sum(y_true * np.log(y_pred_clipped))
+    return float(MLL)
+
+
+
 
 def mean_squared_error(y_pred: np.ndarray, y_true: np.ndarray) -> float:
     """
@@ -22,7 +49,9 @@ def mean_squared_error(y_pred: np.ndarray, y_true: np.ndarray) -> float:
         
     TODO: Implement MSE loss
     """
-    pass
+    MSE = np.mean(np.square(y_pred - y_true))
+    return float(MSE)
+
 
 
 def mse_derivative(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
@@ -40,7 +69,9 @@ def mse_derivative(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
         
     TODO: Implement MSE derivative
     """
-    pass
+    n = y_pred.size
+    dMSE = (2/n) * (y_pred - y_true)
+    return dMSE
 
 
 def cross_entropy_loss(y_pred: np.ndarray, y_true: np.ndarray) -> float:
@@ -59,7 +90,17 @@ def cross_entropy_loss(y_pred: np.ndarray, y_true: np.ndarray) -> float:
     TODO: Implement cross-entropy loss
     Hint: Add small epsilon to prevent log(0)
     """
-    pass
+    
+    eps = 1e-12
+    y_pred_clipped = np.clip(y_pred, eps, 1.0 - eps)
+
+    # Ensure batch dimension
+    if y_pred_clipped.ndim == 1:
+        y_pred_clipped = y_pred_clipped.reshape(1, -1)
+        y_true = y_true.reshape(1, -1)
+
+    loss = -np.sum(y_true * np.log(y_pred_clipped)) / y_pred_clipped.shape[0]
+    return float(loss)
 
 
 def cross_entropy_derivative(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
@@ -77,7 +118,13 @@ def cross_entropy_derivative(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarr
         
     TODO: Implement cross-entropy derivative
     """
-    pass
+    # Ensure batch dimension
+    if y_pred.ndim == 1:
+        y_pred = y_pred.reshape(1, -1)
+        y_true = y_true.reshape(1, -1)
+
+    n = y_pred.shape[0]
+    return (y_pred - y_true) / n
 
 
 def binary_cross_entropy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
@@ -95,7 +142,10 @@ def binary_cross_entropy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
         
     TODO: Implement binary cross-entropy loss
     """
-    pass
+    eps = 1e-12
+    y_pred_clipped = np.clip(y_pred, eps, 1.0 - eps)
+    loss = -np.mean(y_true * np.log(y_pred_clipped) + (1 - y_true) * np.log(1 - y_pred_clipped))
+    return float(loss)
 
 
 def l2_regularization(weights: list, lambda_: float) -> float:
@@ -114,7 +164,11 @@ def l2_regularization(weights: list, lambda_: float) -> float:
     TODO: Implement L2 regularization
     Hint: Sum the squared values of all weights (not biases)
     """
-    pass
+    l2_sum = 0.0
+    for W in weights:
+        l2_sum += np.sum(np.square(W))
+    return (lambda_ / 2) * l2_sum
+
 
 
 def l2_regularization_derivative(weight: np.ndarray, lambda_: float) -> np.ndarray:
@@ -132,7 +186,7 @@ def l2_regularization_derivative(weight: np.ndarray, lambda_: float) -> np.ndarr
         
     TODO: Implement L2 regularization derivative
     """
-    pass
+    return lambda_ * weight
 
 
 # Dictionary mapping loss names to functions
@@ -177,4 +231,3 @@ def get_loss_derivative(name: str):
     if name not in LOSS_DERIVATIVES:
         raise ValueError(f"Unknown loss function: {name}")
     return LOSS_DERIVATIVES[name]
-
