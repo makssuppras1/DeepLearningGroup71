@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""
-Test script for data_loader.py
-This script verifies that Fashion-MNIST and CIFAR-10 loading works correctly.
-"""
+# Test script for data_loader.py - verifies Fashion-MNIST and CIFAR-10 loading
 
 import sys
 import os
@@ -24,7 +21,7 @@ from data_loader import (
 DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
 
 def test_fashion_mnist():
-    """Test Fashion-MNIST loading."""
+    # Test Fashion-MNIST loading
     print("=" * 60)
     print("Testing Fashion-MNIST")
     print("=" * 60)
@@ -78,7 +75,7 @@ def test_fashion_mnist():
     return True
 
 def test_cifar10():
-    """Test CIFAR-10 loading."""
+    # Test CIFAR-10 loading
     print("=" * 60)
     print("Testing CIFAR-10")
     print("=" * 60)
@@ -135,7 +132,7 @@ def test_cifar10():
     return True
 
 def main():
-    """Run all tests."""
+    # Run all tests
     print("\n" + "=" * 60)
     print("DATA LOADER TEST SUITE")
     print("=" * 60 + "\n")

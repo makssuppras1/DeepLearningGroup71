@@ -1,9 +1,4 @@
-"""
-Numerical gradient checking tests for activation and loss derivatives.
-
-This module tests that analytical derivatives match numerical approximations
-using finite differences.
-"""
+# Numerical gradient checking tests - verify analytical derivatives match numerical approximations
 import sys
 import os
 import numpy as np
@@ -26,21 +21,8 @@ from losses import (
 
 
 def numerical_gradient(func, x, epsilon=1e-7):
-    """
-    Compute numerical gradient using finite differences.
-    
-    Handles both:
-    - Element-wise functions (returns array of same shape as input)
-    - Scalar-valued functions (returns scalar)
-    
-    Args:
-        func: Function to differentiate
-        x: Input point
-        epsilon: Small perturbation
-        
-    Returns:
-        Numerical gradient (same shape as input)
-    """
+    # Compute numerical gradient using finite differences
+    # Handles both element-wise functions and scalar-valued functions
     grad = np.zeros_like(x, dtype=float)
     
     # Test if function returns scalar or array
@@ -78,7 +60,7 @@ def numerical_gradient(func, x, epsilon=1e-7):
 
 
 def relative_error(analytical, numerical):
-    """Compute relative error between analytical and numerical gradients."""
+    # Compute relative error between analytical and numerical gradients
     numerator = np.linalg.norm(analytical - numerical)
     denominator = np.linalg.norm(analytical) + np.linalg.norm(numerical)
     if denominator < 1e-10:
@@ -87,10 +69,10 @@ def relative_error(analytical, numerical):
 
 
 class TestActivationDerivatives:
-    """Test activation derivatives numerically."""
+    # Test activation derivatives numerically
     
     def test_relu_derivative_numerical(self):
-        """Test ReLU derivative matches numerical gradient."""
+        # Test ReLU derivative matches numerical gradient
         # Avoid x=0 where ReLU has a discontinuity
         x = np.array([-2.0, -0.5, 0.1, 0.5, 2.0])
         
@@ -104,7 +86,7 @@ class TestActivationDerivatives:
         assert error < 1e-4, f"ReLU derivative error: {error}, analytical: {analytical}, numerical: {numerical}"
     
     def test_sigmoid_derivative_numerical(self):
-        """Test sigmoid derivative matches numerical gradient."""
+        # Test sigmoid derivative matches numerical gradient
         x = np.array([-2.0, -1.0, 0.0, 1.0, 2.0])
         
         def sigmoid_func(x_in):
@@ -117,7 +99,7 @@ class TestActivationDerivatives:
         assert error < 1e-4, f"Sigmoid derivative error: {error}, analytical: {analytical}, numerical: {numerical}"
     
     def test_tanh_derivative_numerical(self):
-        """Test tanh derivative matches numerical gradient."""
+        # Test tanh derivative matches numerical gradient
         x = np.array([-2.0, -1.0, 0.0, 1.0, 2.0])
         
         def tanh_func(x_in):
@@ -130,7 +112,7 @@ class TestActivationDerivatives:
         assert error < 1e-4, f"Tanh derivative error: {error}, analytical: {analytical}, numerical: {numerical}"
     
     def test_softmax_derivative_numerical(self):
-        """Test softmax derivative matches numerical gradient."""
+        # Test softmax derivative (complex due to normalization, check shape and finiteness)
         # Softmax derivative is more complex, test on 2D input
         x = np.array([[1.0, 2.0, 3.0],
                       [0.5, 1.5, 2.5]])
@@ -153,10 +135,10 @@ class TestActivationDerivatives:
 
 
 class TestLossDerivatives:
-    """Test loss function derivatives numerically."""
+    # Test loss function derivatives numerically
     
     def test_mse_derivative_numerical(self):
-        """Test MSE derivative matches numerical gradient."""
+        # Test MSE derivative matches numerical gradient
         y_pred = np.array([[1.0, 2.0], [3.0, 4.0]])
         y_true = np.array([[0.5, 1.5], [2.5, 3.5]])
         
@@ -172,13 +154,8 @@ class TestLossDerivatives:
     @pytest.mark.skip(reason="Cross-entropy derivative uses softmax simplification (y_pred - y_true)/n, "
                              "which differs from raw numerical gradient. This is correct for intended use case.")
     def test_cross_entropy_derivative_numerical(self):
-        """Test cross-entropy derivative matches numerical gradient.
-        
-        Note: This test is skipped because cross_entropy_derivative uses the simplified
-        form (y_pred - y_true)/n which assumes softmax activation. The numerical gradient
-        computes the raw derivative, which differs. The implementation is correct for
-        its intended use case (with softmax).
-        """
+        # Test cross-entropy derivative (skipped: uses softmax simplification)
+        # Note: cross_entropy_derivative uses (y_pred - y_true)/n which assumes softmax
         # Use valid probabilities (avoid extreme values that cause clipping issues)
         y_pred = np.array([[0.4, 0.6], [0.5, 0.5]])
         y_true = np.array([[0.0, 1.0], [1.0, 0.0]])
@@ -193,7 +170,7 @@ class TestLossDerivatives:
         assert error < 0.5, f"Cross-entropy derivative error: {error}"
     
     def test_binary_cross_entropy_derivative_numerical(self):
-        """Test binary cross-entropy derivative numerically."""
+        # Test binary cross-entropy derivative numerically
         y_pred = np.array([0.3, 0.7, 0.5])
         y_true = np.array([0.0, 1.0, 1.0])
         
@@ -213,10 +190,10 @@ class TestLossDerivatives:
 
 
 class TestDerivativeShapes:
-    """Test that derivatives preserve shapes."""
+    # Test that derivatives preserve shapes
     
     def test_activation_derivative_shapes(self):
-        """Test all activation derivatives preserve input shapes."""
+        # Test all activation derivatives preserve input shapes
         shapes = [(5,), (3, 4), (2, 3, 4)]
         
         for shape in shapes:
@@ -227,7 +204,7 @@ class TestDerivativeShapes:
             assert tanh_derivative(x).shape == shape
     
     def test_loss_derivative_shapes(self):
-        """Test loss derivatives preserve input shapes."""
+        # Test loss derivatives preserve input shapes
         y_pred = np.array([[1.0, 2.0], [3.0, 4.0]])
         y_true = np.array([[0.5, 1.5], [2.5, 3.5]])
         
