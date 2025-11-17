@@ -25,7 +25,7 @@ def random_initialization(shape: tuple, seed: int = None) -> np.ndarray:
     return np.random.uniform(-0.01, 0.01, size=shape)
 
 
-def xavier_initialization(shape: tuple, seed: int = None) -> np.ndarray:
+def xavier_initialization(shape: tuple, alpha: float = 1.0, seed: int = None) -> np.ndarray:
     """
     Xavier/Glorot initialization.
     
@@ -53,8 +53,16 @@ def xavier_initialization(shape: tuple, seed: int = None) -> np.ndarray:
         np.random.seed(seed)
     return np.random.uniform(-limit, limit, size=shape)
 
+    if seed is not None:
+        np.random.seed(seed)
 
-def he_initialization(shape: tuple, seed: int = None) -> np.ndarray:
+    n_in, n_out = shape
+    std = np.sqrt(2 * alpha / (n_in + n_out))
+
+    return np.random.normal(0.0, std, size=shape) #uniform(-std, std, size=shape)
+
+
+def he_initialization(shape: tuple, alpha: float = 2.0, seed: int = None) -> np.ndarray:
     """
     He initialization.
     
@@ -94,11 +102,29 @@ def zeros_initialization(shape: tuple) -> np.ndarray:
     return np.zeros(shape)
 
 
+def get_alpha_from_activation(activation: str) -> float:
+    """
+    Get alpha scaling constant based on activation function.
+    α is used to scale the variance of the initialization distribution.
+    Args:
+        activation: Name of the activation function
+    Returns:
+        Alpha scaling constant
+    """
+    activation = activation.lower()
+    if activation in ["tanh", "sigmoid"]:
+        return 1.0
+    elif activation in ["relu"]:
+        return 2.0
+    else:
+        # Default safe choice
+        return 1.0
+    
+
 # Dictionary mapping initialization names to functions
 INITIALIZERS = {
     'random': random_initialization,
-    'xavier': xavier_initialization,
-    'glorot': xavier_initialization,  # Xavier and Glorot are the same
+    'xavier': xavier_initialization, # Xavier and Glorot are the same
     'he': he_initialization,
     'zeros': zeros_initialization
 }
@@ -122,7 +148,8 @@ def get_initializer(name: str):
 def initialize_weights(
     input_size: int,
     output_size: int,
-    method: str = 'xavier',
+    method: str = 'xavier', #using xavier if nothing else is stated
+    activation: str = 'relu', 
     seed: int = None
 ) -> tuple:
     """
