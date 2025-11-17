@@ -20,10 +20,8 @@ def random_initialization(shape: tuple, seed: int = None) -> np.ndarray:
     Returns:
         Initialized weight matrix
     """
-
     if seed is not None:
         np.random.seed(seed)
-
     return np.random.uniform(-0.01, 0.01, size=shape)
 
 
@@ -43,6 +41,17 @@ def xavier_initialization(shape: tuple, alpha: float = 1.0, seed: int = None) ->
     Returns:
         Initialized weight matrix
     """
+    if len(shape) < 2:
+        raise ValueError("Xavier initialization requires at least 2D shape")
+    
+    n_in = shape[0]
+    n_out = shape[1] if len(shape) > 1 else 1
+    
+    limit = np.sqrt(6.0 / (n_in + n_out))
+    
+    if seed is not None:
+        np.random.seed(seed)
+    return np.random.uniform(-limit, limit, size=shape)
 
     if seed is not None:
         np.random.seed(seed)
@@ -69,13 +78,15 @@ def he_initialization(shape: tuple, alpha: float = 2.0, seed: int = None) -> np.
     Returns:
         Initialized weight matrix
     """
+    if len(shape) < 2:
+        raise ValueError("He initialization requires at least 2D shape")
+    
+    n_in = shape[0]
+    std = np.sqrt(2.0 / n_in)
     
     if seed is not None:
         np.random.seed(seed)
-    n_in, _ = shape
-    std = np.sqrt(alpha / n_in)
-
-    return np.random.normal(0, std, size=shape)
+    return np.random.normal(0.0, std, size=shape)
 
 
 def zeros_initialization(shape: tuple) -> np.ndarray:
@@ -88,7 +99,6 @@ def zeros_initialization(shape: tuple) -> np.ndarray:
     Returns:
         Zero-initialized array
     """
-    
     return np.zeros(shape)
 
 
@@ -154,19 +164,20 @@ def initialize_weights(
     Returns:
         Tuple of (weights, biases)
     """
-    alpha = get_alpha_from_activation(activation)
-    init_fn = get_initializer(method)
-
-    import inspect
-    sig = inspect.signature(init_fn)
-
-    kwargs = {}
-    if 'alpha' in sig.parameters:
-        kwargs['alpha'] = alpha
-    if 'seed' in sig.parameters:
-        kwargs['seed'] = seed
-
-    W = init_fn((input_size, output_size), **kwargs)
-    b = zeros_initialization((output_size,))
-    return W, b
+    # Get the initializer function
+    initializer = get_initializer(method)
+    
+    # Initialize weights with the specified method
+    weight_shape = (input_size, output_size)
+    # Handle zeros initialization which doesn't take seed parameter
+    if method == 'zeros':
+        weights = initializer(weight_shape)
+    else:
+        weights = initializer(weight_shape, seed=seed)
+    
+    # Initialize biases to zeros
+    bias_shape = (output_size,)
+    biases = zeros_initialization(bias_shape)
+    
+    return weights, biases
 
