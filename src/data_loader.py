@@ -1,7 +1,4 @@
-"""
-Data loading and preprocessing utilities.
-Functions to download, load, and preprocess Fashion-MNIST and CIFAR-10 datasets.
-"""
+# Data loading and preprocessing utilities for Fashion-MNIST and CIFAR-10
 
 import numpy as np
 import os
@@ -14,11 +11,7 @@ import tarfile
 import struct
 
 def download_fashion_mnist(data_dir: str = './data') -> None:
-    """
-    Download Fashion-MNIST dataset.
-    Args: data_dir: Directory to save the dataset.
-    Returns: None.
-    """
+    # Download Fashion-MNIST dataset files to data_dir
     os.makedirs(data_dir, exist_ok=True)
     
     base_url = "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/"
@@ -45,11 +38,7 @@ def download_fashion_mnist(data_dir: str = './data') -> None:
         print(f"Downloaded {filename}")
 
 def download_cifar10(data_dir: str = './data') -> None:
-    """
-    Download CIFAR-10 dataset.
-    Args: data_dir: Directory to save the dataset
-    Returns: None.
-    """
+    # Download and extract CIFAR-10 dataset to data_dir
     # Create data directory if it doesn't exist
     os.makedirs(data_dir, exist_ok=True)
     
@@ -83,20 +72,12 @@ def download_cifar10(data_dir: str = './data') -> None:
 
 
 def load_fashion_mnist(data_dir: str = './data') -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Load Fashion-MNIST dataset.
+    # Load Fashion-MNIST dataset from IDX files
+    # Returns: (X_train, y_train, X_test, y_test)
+    # Images: (num_samples, 28, 28), Labels: (num_samples,), Values: 0-255 (uint8)
     
-    Args:
-        data_dir: Directory containing the dataset
-        
-    Returns:
-        Tuple of (X_train, y_train, X_test, y_test)
-        Images shape: (num_samples, 28, 28)
-        Labels shape: (num_samples,)
-        Values: 0-255 (uint8)
-    """
     def read_idx_images(filename):
-        """Read IDX format image file."""
+        # Read IDX format image file
         with gzip.open(filename, 'rb') as f:
             # Read and verify magic number (2051 for images)
             magic = struct.unpack('>I', f.read(4))[0]
@@ -113,7 +94,7 @@ def load_fashion_mnist(data_dir: str = './data') -> Tuple[np.ndarray, np.ndarray
             return data.reshape(num_images, num_rows, num_cols)
     
     def read_idx_labels(filename):
-        """Read IDX format label file."""
+        # Read IDX format label file
         with gzip.open(filename, 'rb') as f:
             # Read and verify magic number (2049 for labels)
             magic = struct.unpack('>I', f.read(4))[0]
@@ -139,22 +120,14 @@ def load_fashion_mnist(data_dir: str = './data') -> Tuple[np.ndarray, np.ndarray
 
 
 def load_cifar10(data_dir: str = './data') -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Load CIFAR-10 dataset.
+    # Load CIFAR-10 dataset from pickle files
+    # Returns: (X_train, y_train, X_test, y_test)
+    # Images: (num_samples, 32, 32, 3) RGB, Labels: (num_samples,), Values: 0-255 (uint8)
     
-    Args: 
-        data_dir: Directory containing the dataset
-        
-    Returns: 
-        Tuple of (X_train, y_train, X_test, y_test)
-        Images shape: (num_samples, 32, 32, 3) - RGB images
-        Labels shape: (num_samples,)
-        Values: 0-255 (uint8)
-    """
     cifar_dir = os.path.join(data_dir, 'cifar-10-batches-py')
     
     def load_batch(filename):
-        """Load a single CIFAR-10 batch file."""
+        # Load a single CIFAR-10 batch file (pickle format)
         with open(filename, 'rb') as f:
             batch = pickle.load(f, encoding='bytes')
             # Keys are bytes: b'data', b'labels', b'batch_label', b'filenames'
@@ -195,21 +168,8 @@ def preprocess_data(
     flatten: bool = True,
     normalize: bool = True
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Preprocess input data and labels.
-    
-    Args:
-        X: Input data (images)
-        y: Labels
-        num_classes: Number of classes for one-hot encoding
-        flatten: Whether to flatten images
-        normalize: Whether to normalize to [0, 1]
-        
-    Returns:
-        Tuple of (X_processed, y_processed)
-        - X_processed: Flattened and normalized if requested
-        - y_processed: One-hot encoded labels
-    """
+    # Preprocess data: flatten images, normalize to [0,1], one-hot encode labels
+    # Returns: (X_processed, y_processed) where y_processed is one-hot encoded
     X_processed = X.astype(np.float32)
     
     # Flatten images if needed (keeps batch dimension)
@@ -232,14 +192,11 @@ def create_mini_batches(
     batch_size: int = 32,
     shuffle: bool = True
 ) -> list:
-    """
-    Create mini-batches for training.
-    Returns: List of (X_batch, y_batch) tuples. 
-    Each tuple contains a batch of input data and labels.
-    Args: X: Input data, y: Labels, batch_size: Size of each mini-batch, shuffle: Whether to shuffle data before batching
-    Returns: List of (X_batch, y_batch) tuples
-    """
-    # shuffle the data if requested
+    # Create mini-batches for training
+    # Returns: List of (X_batch, y_batch) tuples
+    # Shuffle data before batching if requested
+    
+    # Shuffle the data if requested
     if shuffle:
         indices = np.random.permutation(len(X))
         X = X[indices]
@@ -258,18 +215,9 @@ def train_val_split(
     val_split: float = 0.2,
     random_seed: Optional[int] = None
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Split data into training and validation sets.
-    
-    Args:
-        X: Input data
-        y: Labels
-        val_split: Fraction of data to use for validation
-        random_seed: Random seed for reproducibility
-        
-    Returns:
-        Tuple of (X_train, X_val, y_train, y_val)
-    """
+    # Split data into training and validation sets
+    # Returns: (X_train, X_val, y_train, y_val)
+    # val_split: fraction of data for validation (e.g., 0.2 = 20%)
     # Set random seed if provided
     if random_seed is not None:
         np.random.seed(random_seed)
@@ -302,11 +250,7 @@ CIFAR10_CLASSES = [
 
 
 def get_class_names(dataset: str) -> list:
-    """
-    Get class names for a dataset.
-    Args: dataset: Dataset name ('fashion_mnist' or 'cifar10')
-    Returns: List of class names for the dataset
-    """
+    # Get class names for a dataset ('fashion_mnist' or 'cifar10')
     if dataset.lower() == 'fashion_mnist':
         return FASHION_MNIST_CLASSES
     elif dataset.lower() == 'cifar10':

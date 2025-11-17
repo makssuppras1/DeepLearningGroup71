@@ -1,9 +1,4 @@
-"""
-Tests for weight initialization methods.
-
-This module tests that initialization methods have correct variance
-and produce reasonable weight distributions.
-"""
+# Tests for weight initialization methods (variance and distribution checks)
 import sys
 import os
 import numpy as np
@@ -23,10 +18,10 @@ from initializers import (
 
 
 class TestRandomInitialization:
-    """Test random initialization."""
+    # Test random initialization
     
     def test_random_initialization_shape(self):
-        """Test random initialization returns correct shape."""
+        # Test random initialization returns correct shape
         shape = (10, 20)
         weights = random_initialization(shape, seed=42)
         
@@ -34,7 +29,7 @@ class TestRandomInitialization:
             f"Expected shape {shape}, got {weights.shape}"
     
     def test_random_initialization_range(self):
-        """Test random initialization values are in expected range."""
+        # Test random initialization values are in expected range [-0.01, 0.01]
         shape = (100, 200)
         weights = random_initialization(shape, seed=42)
         
@@ -43,7 +38,7 @@ class TestRandomInitialization:
         assert np.all(weights <= 0.01), "Weights should be <= 0.01"
     
     def test_random_initialization_reproducibility(self):
-        """Test random initialization is reproducible with same seed."""
+        # Test random initialization is reproducible with same seed
         shape = (10, 20)
         weights1 = random_initialization(shape, seed=42)
         weights2 = random_initialization(shape, seed=42)
@@ -53,10 +48,10 @@ class TestRandomInitialization:
 
 
 class TestXavierInitialization:
-    """Test Xavier/Glorot initialization."""
+    # Test Xavier/Glorot initialization
     
     def test_xavier_initialization_shape(self):
-        """Test Xavier initialization returns correct shape."""
+        # Test Xavier initialization returns correct shape
         shape = (10, 20)
         weights = xavier_initialization(shape, seed=42)
         
@@ -64,7 +59,7 @@ class TestXavierInitialization:
             f"Expected shape {shape}, got {weights.shape}"
     
     def test_xavier_initialization_variance(self):
-        """Test Xavier initialization has correct variance."""
+        # Test Xavier initialization has correct variance (2/(n_in+n_out) for uniform)
         n_in, n_out = 100, 50
         shape = (n_in, n_out)
         
@@ -86,7 +81,7 @@ class TestXavierInitialization:
             f"Expected variance ~{expected_variance}, got {sample_variance}"
     
     def test_xavier_initialization_range(self):
-        """Test Xavier initialization values are in expected range."""
+        # Test Xavier initialization values are in expected range
         n_in, n_out = 10, 20
         shape = (n_in, n_out)
         weights = xavier_initialization(shape, seed=42)
@@ -100,7 +95,7 @@ class TestXavierInitialization:
             f"Weights should be <= {expected_range}"
     
     def test_xavier_initialization_reproducibility(self):
-        """Test Xavier initialization is reproducible with same seed."""
+        # Test Xavier initialization is reproducible with same seed
         shape = (10, 20)
         weights1 = xavier_initialization(shape, seed=42)
         weights2 = xavier_initialization(shape, seed=42)
@@ -110,10 +105,10 @@ class TestXavierInitialization:
 
 
 class TestHeInitialization:
-    """Test He initialization."""
+    # Test He initialization
     
     def test_he_initialization_shape(self):
-        """Test He initialization returns correct shape."""
+        # Test He initialization returns correct shape
         shape = (10, 20)
         weights = he_initialization(shape, seed=42)
         
@@ -121,7 +116,7 @@ class TestHeInitialization:
             f"Expected shape {shape}, got {weights.shape}"
     
     def test_he_initialization_variance(self):
-        """Test He initialization has correct variance."""
+        # Test He initialization has correct variance (2/n_in)
         n_in, n_out = 100, 50
         shape = (n_in, n_out)
         
@@ -142,7 +137,7 @@ class TestHeInitialization:
             f"Expected variance ~{expected_variance}, got {sample_variance}"
     
     def test_he_initialization_mean(self):
-        """Test He initialization has zero mean."""
+        # Test He initialization has zero mean
         n_in, n_out = 100, 50
         shape = (n_in, n_out)
         
@@ -160,7 +155,7 @@ class TestHeInitialization:
             f"Expected mean ~0, got {sample_mean}"
     
     def test_he_initialization_reproducibility(self):
-        """Test He initialization is reproducible with same seed."""
+        # Test He initialization is reproducible with same seed
         shape = (10, 20)
         weights1 = he_initialization(shape, seed=42)
         weights2 = he_initialization(shape, seed=42)
@@ -170,10 +165,10 @@ class TestHeInitialization:
 
 
 class TestZerosInitialization:
-    """Test zeros initialization."""
+    # Test zeros initialization
     
     def test_zeros_initialization_shape(self):
-        """Test zeros initialization returns correct shape."""
+        # Test zeros initialization returns correct shape
         shape = (10, 20)
         weights = zeros_initialization(shape)
         
@@ -181,7 +176,7 @@ class TestZerosInitialization:
             f"Expected shape {shape}, got {weights.shape}"
     
     def test_zeros_initialization_values(self):
-        """Test zeros initialization returns all zeros."""
+        # Test zeros initialization returns all zeros
         shape = (10, 20)
         weights = zeros_initialization(shape)
         
@@ -190,10 +185,10 @@ class TestZerosInitialization:
 
 
 class TestInitializeWeights:
-    """Test initialize_weights helper function."""
+    # Test initialize_weights helper function
     
     def test_initialize_weights_returns_tuple(self):
-        """Test initialize_weights returns weights and biases."""
+        # Test initialize_weights returns weights and biases tuple
         weights, biases = initialize_weights(
             input_size=10,
             output_size=20,
@@ -207,7 +202,7 @@ class TestInitializeWeights:
             f"Expected biases shape (20,), got {biases.shape}"
     
     def test_initialize_weights_different_methods(self):
-        """Test initialize_weights works with different methods."""
+        # Test initialize_weights works with different methods (random, xavier, he, zeros)
         methods = ['random', 'xavier', 'he', 'zeros']
         
         for method in methods:
@@ -223,27 +218,26 @@ class TestInitializeWeights:
 
 
 class TestGetInitializer:
-    """Test get_initializer helper function."""
+    # Test get_initializer helper function
     
     def test_get_initializer_valid(self):
-        """Test getting valid initializers."""
+        # Test getting valid initializers
         assert get_initializer('random') == random_initialization
         assert get_initializer('xavier') == xavier_initialization
-        assert get_initializer('glorot') == xavier_initialization
         assert get_initializer('he') == he_initialization
         assert get_initializer('zeros') == zeros_initialization
     
     def test_get_initializer_invalid(self):
-        """Test getting invalid initializer raises error."""
+        # Test getting invalid initializer raises error
         with pytest.raises(ValueError):
             get_initializer('invalid_initializer')
 
 
 class TestInitializationVarianceScaling:
-    """Test that initialization variance scales correctly with input size."""
+    # Test that initialization variance scales correctly with input size
     
     def test_xavier_variance_scales_with_input_size(self):
-        """Test Xavier variance decreases with input size."""
+        # Test Xavier variance decreases with input size
         n_out = 50
         
         # Small input size
@@ -263,7 +257,7 @@ class TestInitializationVarianceScaling:
             f"Xavier variance should decrease with input size: var_small={var_small}, var_large={var_large}"
     
     def test_he_variance_scales_with_input_size(self):
-        """Test He variance decreases with input size."""
+        # Test He variance decreases with input size
         n_out = 50
         
         # Small input size

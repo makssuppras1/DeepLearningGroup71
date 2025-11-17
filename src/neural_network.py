@@ -5,34 +5,16 @@ This module contains the main neural network class that will be implemented from
 """
 
 import numpy as np
-from typing import List, Tuple, Optional
-from layers import *
+from typing import List, Tuple, Optional, Dict
+from layers import DenseLayer
+from activations import get_activation
+from losses import get_loss_function, get_loss_derivative, cross_entropy_loss, l2_regularization
+from optimizers import get_optimizer
 
 
 class NeuralNetwork:
-    """
-    A flexible fully-connected feedforward neural network implemented with NumPy.
-    
-    This class should support:
-    - Configurable number of layers and units
-    - Multiple activation functions
-    - Different optimizers
-    - L2 regularization
-    - Mini-batch training
-    
-    Attributes:
-        TODO: Define your attributes here
-        
-    Example usage:
-        model = NeuralNetwork(
-            input_size=784,
-            hidden_layers=[128, 64],
-            output_size=10,
-            activation='relu',
-            learning_rate=0.01,
-            optimizer='adam'
-        )
-    """
+    # Fully-connected feedforward neural network implemented with NumPy
+    # Supports: configurable layers, multiple activations, optimizers, L2 regularization
     
     def __init__(
         self,
@@ -47,26 +29,11 @@ class NeuralNetwork:
         l2_lambda: float = 0.0,
         random_seed: Optional[int] = None
     ):
-        """
-        Initialize the neural network.
-        
-        Args:
-            input_size: Number of input features
-            hidden_layers: List containing number of units in each hidden layer
-            output_size: Number of output classes
-            activation: Activation function for hidden layers ('relu', 'sigmoid', 'tanh')
-            output_activation: Activation function for output layer ('softmax', 'sigmoid')
-            learning_rate: Learning rate for optimization
-            optimizer: Optimizer to use ('sgd', 'momentum', 'rmsprop', 'adam')
-            weight_init: Weight initialization method ('random', 'xavier', 'he')
-            l2_lambda: L2 regularization coefficient
-            random_seed: Random seed for reproducibility
-        """
-            
+        # Initialize network: create layers, set up optimizer, store hyperparameters
         self.layers = []
         input_dim = input_size
 
-        #Hidden layers
+        # Create hidden layers
         for hidden_units in hidden_layers:
             layer = DenseLayer(
                 input_size=input_dim,
@@ -86,134 +53,145 @@ class NeuralNetwork:
             weight_init=weight_init,
             seed=random_seed
         ))
-
-        pass
+        
+        # Store hyperparameters
+        self.input_size = input_size
+        self.hidden_layers = hidden_layers
+        self.output_size = output_size
+        self.activation = activation
+        self.output_activation = output_activation
+        self.learning_rate = learning_rate
+        self.optimizer_name = optimizer
+        self.l2_lambda = l2_lambda
+        
+        # Initialize optimizer
+        self.optimizer = get_optimizer(optimizer, learning_rate=learning_rate)
+        
+        # Store loss function (default to cross_entropy for classification)
+        self.loss_function = 'cross_entropy'
+        
+        # Store last predictions and loss for debugging
+        self.last_predictions = None
+        self.last_loss = None
     
-    def forward_whole_network(self, X: np.ndarray) -> np.ndarray:
-        """
-        Perform forward propagation through the network.     
-        Args:
-            X: Input data of shape (batch_size, input_size)        
-        Returns:
-            Output predictions of shape (batch_size, output_size)
-            
-        """
+    def forward(self, X: np.ndarray) -> np.ndarray:
+        # Forward pass: propagate input through all layers
+        # X: (batch_size, input_size) -> returns: (batch_size, output_size)
         A = X
         for layer in self.layers:
             A = layer.forward(A)
         return A
     
     
-    def backward(self, X: np.ndarray, y: np.ndarray) -> None:
-        """
-        Perform backward propagation to compute gradients.
+    def backward(self, X: np.ndarray, y: np.ndarray, y_pred: np.ndarray = None) -> None:
+        # Backward pass: compute gradients for all weights and biases
+        # X: input data, y: true labels, y_pred: optional pre-computed predictions
         
-        Args:
-            X: Input data of shape (batch_size, input_size)
-            y: True labels of shape (batch_size, output_size)
+        # Get predictions if not provided
+        if y_pred is None:
+            y_pred = self.forward(X)
+        
+        # Compute initial gradient from loss function
+        loss_derivative = get_loss_derivative(self.loss_function)
+        dA = loss_derivative(y_pred, y)
+        
+        # Backpropagate through layers in reverse order
+        for i in range(len(self.layers) - 1, -1, -1):
+            layer = self.layers[i]
+            dA = layer.backward(dA)  # Compute gradients for this layer
             
-        TODO: Implement backward pass
-        - Compute gradients for all weights and biases
-        - Include L2 regularization in gradient computation
-        - Store gradients for optimizer to use
-        """
-        pass
+            # Add L2 regularization term to weight gradients
+            if self.l2_lambda > 0:
+                layer.dW += self.l2_lambda * layer.W
     
     def update_weights(self) -> None:
-        """
-        Update weights using the selected optimizer.
+        # Update all weights and biases using the optimizer
         
-        TODO: Implement weight updates
-        - Use computed gradients from backward pass
-        - Apply optimizer-specific updates (SGD, Momentum, RMSprop, Adam)
-        - Update all weights and biases
-        """
-        pass
+        # Collect parameters and gradients from all layers
+        params = {}
+        grads = {}
+        for i, layer in enumerate(self.layers):
+            params[f'W{i+1}'] = layer.W
+            params[f'b{i+1}'] = layer.b
+            grads[f'W{i+1}'] = layer.dW
+            grads[f'b{i+1}'] = layer.db
+        
+        # Apply optimizer update rule
+        updated_params = self.optimizer.update(params, grads)
+        
+        # Update layer weights and biases with new values
+        for i, layer in enumerate(self.layers):
+            layer.W = updated_params[f'W{i+1}']
+            layer.b = updated_params[f'b{i+1}']
     
     def compute_loss(self, y_pred: np.ndarray, y_true: np.ndarray) -> float:
-        """
-        Compute the loss function.
+        # Compute total loss: data loss + L2 regularization
+        # y_pred: predictions, y_true: true labels -> returns: scalar loss
         
-        Args:
-            y_pred: Predicted values of shape (batch_size, output_size)
-            y_true: True labels of shape (batch_size, output_size)
-            
-        Returns:
-            Loss value (scalar)
-            
-        TODO: Implement loss computation
-        - Compute cross-entropy or MSE loss
-        - Add L2 regularization term
-        - Return total loss
-        """
-        pass
+        # Compute data loss (e.g., cross-entropy)
+        loss_func = get_loss_function(self.loss_function)
+        data_loss = loss_func(y_pred, y_true)
+        
+        # Add L2 regularization term if specified
+        if self.l2_lambda > 0:
+            weights = [layer.W for layer in self.layers]
+            reg_loss = l2_regularization(weights, self.l2_lambda)
+            total_loss = data_loss + reg_loss
+        else:
+            total_loss = data_loss
+        
+        return total_loss
     
     def train_step(self, X_batch: np.ndarray, y_batch: np.ndarray) -> float:
-        """
-        Perform one training step (forward pass, backward pass, weight update).
+        # One complete training step: forward -> backward -> update
+        # Returns loss value for this batch
         
-        Args:
-            X_batch: Mini-batch of input data
-            y_batch: Mini-batch of labels
-            
-        Returns:
-            Loss value for this batch
-            
-        TODO: Implement one complete training step
-        """
-        pass
+        # Forward pass: compute predictions
+        y_pred = self.forward(X_batch)
+        
+        # Compute loss
+        loss = self.compute_loss(y_pred, y_batch)
+        
+        # Backward pass: compute gradients (pass y_pred to avoid redundant forward)
+        self.backward(X_batch, y_batch, y_pred=y_pred)
+        
+        # Update weights using computed gradients
+        self.update_weights()
+        
+        # Store for debugging/monitoring
+        self.last_predictions = y_pred
+        self.last_loss = loss
+        
+        return loss
     
     def predict(self, X: np.ndarray) -> np.ndarray:
-        """
-        Make predictions on input data.
-        
-        Args:
-            X: Input data of shape (batch_size, input_size)
-            
-        Returns:
-            Predicted class labels of shape (batch_size,)
-            
-        TODO: Implement prediction
-        - Perform forward pass
-        - Convert probabilities to class labels
-        """
-        pass
+        # Predict class labels: get probabilities and return argmax
+        # X: (batch_size, input_size) -> returns: (batch_size,) class indices
+        probabilities = self.predict_proba(X)
+        predictions = np.argmax(probabilities, axis=1)
+        return predictions
     
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        """
-        Get prediction probabilities.
-        
-        Args:
-            X: Input data of shape (batch_size, input_size)
-            
-        Returns:
-            Prediction probabilities of shape (batch_size, output_size)
-            
-        TODO: Implement probability prediction
-        """
-        pass
+        # Get prediction probabilities (forward pass without training)
+        # X: (batch_size, input_size) -> returns: (batch_size, output_size) probabilities
+        probabilities = self.forward(X)
+        return probabilities
     
     def get_params(self) -> dict:
-        """
-        Get current model parameters.
-        
-        Returns:
-            Dictionary containing all weights and biases
-            
-        TODO: Return all model parameters in a dictionary
-        """
-        pass
+        # Get all model parameters (weights and biases) as dictionary
+        # Returns: {'W1': weights, 'b1': biases, 'W2': ..., ...}
+        params = {}
+        for i, layer in enumerate(self.layers):
+            params[f'W{i+1}'] = layer.W.copy()
+            params[f'b{i+1}'] = layer.b.copy()
+        return params
     
     def set_params(self, params: dict) -> None:
-        """
-        Set model parameters.
-        
-        Args:
-            params: Dictionary containing weights and biases
-            
-        TODO: Load parameters into the model
-        """
-        pass
+        # Set model parameters from dictionary
+        # params: {'W1': weights, 'b1': biases, 'W2': ..., ...}
+        for i, layer in enumerate(self.layers):
+            layer.W = params[f'W{i+1}'].copy()
+            layer.b = params[f'b{i+1}'].copy()
 
 
 # Additional helper functions can be added below

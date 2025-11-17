@@ -1,6 +1,5 @@
-"""
-Unit tests for optimizers.
-"""
+# Unit tests for optimizers
+
 import sys
 import os
 import numpy as np
@@ -13,10 +12,10 @@ from optimizers import SGD, MomentumSGD, RMSprop, Adam, get_optimizer
 
 
 class TestSGD:
-    """Test SGD optimizer."""
+    # Test SGD optimizer
     
     def test_sgd_basic_update(self):
-        """Test basic SGD update."""
+        # Test basic SGD update
         optimizer = SGD(learning_rate=0.01)
         
         params = {
@@ -39,7 +38,7 @@ class TestSGD:
         np.testing.assert_array_almost_equal(updated_params['b1'], expected_b1)
     
     def test_sgd_multiple_layers(self):
-        """Test SGD with multiple layers."""
+        # Test SGD with multiple layers
         optimizer = SGD(learning_rate=0.1)
         
         params = {
@@ -71,7 +70,7 @@ class TestSGD:
         )
     
     def test_sgd_missing_gradient(self):
-        """Test SGD raises error when gradient is missing."""
+        # Test SGD raises error when gradient is missing
         optimizer = SGD(learning_rate=0.01)
         
         params = {
@@ -88,7 +87,7 @@ class TestSGD:
             optimizer.update(params, grads)
     
     def test_sgd_different_learning_rates(self):
-        """Test SGD with different learning rates."""
+        # Test SGD with different learning rates
         params = {
             'W': np.array([[1.0, 2.0]])
         }
@@ -111,7 +110,7 @@ class TestSGD:
         assert np.all(diff2 > diff1)
     
     def test_sgd_zero_gradient(self):
-        """Test SGD with zero gradients."""
+        # Test SGD with zero gradients (parameters should remain unchanged)
         optimizer = SGD(learning_rate=0.01)
         
         params = {
@@ -128,7 +127,7 @@ class TestSGD:
         np.testing.assert_array_equal(updated_params['W'], params['W'])
     
     def test_sgd_shape_preservation(self):
-        """Test that SGD preserves array shapes."""
+        # Test that SGD preserves array shapes
         optimizer = SGD(learning_rate=0.01)
         
         params = {
@@ -155,25 +154,25 @@ class TestSGD:
 
 
 class TestGetOptimizer:
-    """Test get_optimizer helper function."""
+    # Test get_optimizer helper function
     
     def test_get_sgd(self):
-        """Test getting SGD optimizer."""
+        # Test getting SGD optimizer
         optimizer = get_optimizer('sgd', learning_rate=0.01)
         assert isinstance(optimizer, SGD)
         assert optimizer.learning_rate == 0.01
     
     def test_get_invalid_optimizer(self):
-        """Test getting invalid optimizer raises error."""
+        # Test getting invalid optimizer raises error
         with pytest.raises(ValueError, match="Unknown optimizer"):
             get_optimizer('invalid_optimizer')
 
 
 class TestOptimizerSimpleFunction:
-    """Test optimizers on a simple function minimization."""
+    # Test optimizers on a simple function minimization
     
     def test_sgd_minimize_quadratic(self):
-        """Test SGD can minimize a simple quadratic function."""
+        # Test SGD can minimize a simple quadratic function f(x) = (x - 5)^2
         # Minimize f(x) = (x - 5)^2
         # Minimum is at x = 5
         optimizer = SGD(learning_rate=0.1)
@@ -191,7 +190,7 @@ class TestOptimizerSimpleFunction:
         assert np.abs(params['x'][0] - 5.0) < 0.1
     
     def test_sgd_minimize_2d_function(self):
-        """Test SGD on 2D function minimization."""
+        # Test SGD on 2D function minimization f(x, y) = x^2 + y^2
         # Minimize f(x, y) = x^2 + y^2
         # Minimum is at (0, 0)
         optimizer = SGD(learning_rate=0.1)
