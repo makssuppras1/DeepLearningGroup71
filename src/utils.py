@@ -10,19 +10,18 @@ from sklearn.metrics import confusion_matrix, classification_report
 
 
 def accuracy_score(y_pred: np.ndarray, y_true: np.ndarray) -> float:
-    """
-    Calculate classification accuracy.
+    # Calculate classification accuracy
+    # y_pred: predicted class indices, y_true: true class indices (or one-hot)
     
-    Args:
-        y_pred: Predicted labels
-        y_true: True labels
-        
-    Returns:
-        Accuracy score
-        
-    TODO: Implement accuracy calculation
-    """
-    pass
+    # Handle one-hot encoded y_true
+    if y_true.ndim > 1 and y_true.shape[1] > 1:
+        y_true = np.argmax(y_true, axis=1)
+    
+    # Ensure y_pred is 1D
+    if y_pred.ndim > 1:
+        y_pred = y_pred.flatten()
+    
+    return float(np.mean(y_pred == y_true))
 
 
 def plot_training_curves(
@@ -186,13 +185,6 @@ def compute_gradient_norm(gradients: dict) -> float:
 
 
 def set_random_seed(seed: int) -> None:
-    """
-    Set random seed for reproducibility.
-    
-    Args:
-        seed: Random seed value
-        
-    TODO: Set random seed for numpy
-    """
-    pass
+    # Set random seed for reproducibility
+    np.random.seed(seed)
 

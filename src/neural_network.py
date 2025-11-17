@@ -6,10 +6,10 @@ This module contains the main neural network class that will be implemented from
 
 import numpy as np
 from typing import List, Tuple, Optional, Dict
-from layers import DenseLayer
-from activations import get_activation
-from losses import get_loss_function, get_loss_derivative, cross_entropy_loss, l2_regularization
-from optimizers import get_optimizer
+from .layers import DenseLayer
+from .activations import get_activation
+from .losses import get_loss_function, get_loss_derivative, cross_entropy_loss, l2_regularization
+from .optimizers import get_optimizer
 
 
 class NeuralNetwork:
