@@ -41,8 +41,6 @@ class SGD(Optimizer):
     Stochastic Gradient Descent optimizer.
     
     Update rule: W = W - learning_rate * gradient
-    
-    TODO: Implement SGD update rule
     """
     
     def __init__(self, learning_rate: float = 0.01):
@@ -53,15 +51,24 @@ class SGD(Optimizer):
         Perform SGD update.
         
         Args:
-            params: Current parameters
-            grads: Gradients
+            params: Current parameters (dictionary with keys like 'W1', 'b1', 'W2', 'b2', etc.)
+            grads: Gradients (dictionary with same keys as params)
             
         Returns:
             Updated parameters
             
-        TODO: Implement SGD parameter update
+        Update rule: param = param - learning_rate * gradient
         """
-        pass
+        updated_params = {}
+        
+        for key in params:
+            if key not in grads:
+                raise ValueError(f"Gradient for parameter '{key}' not found")
+            
+            # SGD update: W = W - learning_rate * gradient
+            updated_params[key] = params[key] - self.learning_rate * grads[key]
+        
+        return updated_params
 
 
 class MomentumSGD(Optimizer):
