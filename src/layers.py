@@ -54,10 +54,8 @@ class DenseLayer:
     def forward(self, X: np.ndarray) -> np.ndarray:
         """
         Forward pass through the layer. 
-        Args:
-            X: Input data of shape (batch_size, input_size)    
-        Returns:
-            Output of shape (batch_size, output_size)
+        Args: X: Input data of shape (batch_size, input_size)    
+        Returns: Output of shape (batch_size, output_size)
         """
 
          # Store input for backprop
@@ -78,12 +76,8 @@ class DenseLayer:
     def backward(self, dA: np.ndarray) -> np.ndarray:
         """
         Backward pass through the layer.
-        
-        Args:
-            dA: Gradient of loss with respect to layer output
-            
-        Returns:
-            Gradient of loss with respect to layer input
+        Args: dA: Gradient of loss with respect to layer output
+        Returns: Gradient of loss with respect to layer input
         """
         # calculate dZ = dA  multiplied by activation_derivative(Z)
         activation_grad_func = get_activation_derivative(self.activation)

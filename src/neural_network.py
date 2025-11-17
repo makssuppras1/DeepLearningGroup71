@@ -7,32 +7,10 @@ This module contains the main neural network class that will be implemented from
 import numpy as np
 from typing import List, Tuple, Optional
 from layers import *
+from losses import *
 
 
 class NeuralNetwork:
-    """
-    A flexible fully-connected feedforward neural network implemented with NumPy.
-    
-    This class should support:
-    - Configurable number of layers and units
-    - Multiple activation functions
-    - Different optimizers
-    - L2 regularization
-    - Mini-batch training
-    
-    Attributes:
-        TODO: Define your attributes here
-        
-    Example usage:
-        model = NeuralNetwork(
-            input_size=784,
-            hidden_layers=[128, 64],
-            output_size=10,
-            activation='relu',
-            learning_rate=0.01,
-            optimizer='adam'
-        )
-    """
     
     def __init__(
         self,
@@ -45,6 +23,7 @@ class NeuralNetwork:
         optimizer: str = 'sgd',
         weight_init: str = 'xavier',
         l2_lambda: float = 0.0,
+        loss_function: str = 'cross_entropy_loss', # we need to couple this to losses.py
         random_seed: Optional[int] = None
     ):
         """
@@ -60,10 +39,22 @@ class NeuralNetwork:
             optimizer: Optimizer to use ('sgd', 'momentum', 'rmsprop', 'adam')
             weight_init: Weight initialization method ('random', 'xavier', 'he')
             l2_lambda: L2 regularization coefficient
+            loss_function: Loss function to use ('mse', 'cross_entropy', 'binary_cross_entropy')
             random_seed: Random seed for reproducibility
         """
             
         self.layers = []
+        self.input_size = input_size
+        self.hidden_layers = hidden_layers
+        self.output_size = output_size
+        self.activation = activation
+        self.output_activation = output_activation
+        self.learning_rate = learning_rate
+        self.optimizer = optimizer
+        self.weight_init = weight_init
+        self.l2_lambda = l2_lambda
+        self.loss_function = loss_function
+
         input_dim = input_size
 
         #Hidden layers
@@ -92,11 +83,8 @@ class NeuralNetwork:
     def forward_whole_network(self, X: np.ndarray) -> np.ndarray:
         """
         Perform forward propagation through the network.     
-        Args:
-            X: Input data of shape (batch_size, input_size)        
-        Returns:
-            Output predictions of shape (batch_size, output_size)
-            
+        Args: X: Input data of shape (batch_size, input_size)        
+        Returns: Output predictions of shape (batch_size, output_size)  
         """
         A = X
         for layer in self.layers:
@@ -107,46 +95,42 @@ class NeuralNetwork:
     def backward(self, X: np.ndarray, y: np.ndarray) -> None:
         """
         Perform backward propagation to compute gradients.
-        
-        Args:
-            X: Input data of shape (batch_size, input_size)
-            y: True labels of shape (batch_size, output_size)
-            
-        TODO: Implement backward pass
-        - Compute gradients for all weights and biases
-        - Include L2 regularization in gradient computation
-        - Store gradients for optimizer to use
+        Args: X: Input data of shape (batch_size, input_size), y: True labels of shape (batch_size, output_size)
         """
-        pass
+        y_pred = self.forward_whole_network(X)
+        dA = get_loss_derivative(self.loss_function)(y_pred, y)
+
+        for layer in enumerate(reversed(self.layers)):
+                dA_prev = layer.backward(dA)
+
+                # Add L2 regularization to weight gradients
+                layer.dW += self.l2_lambda * layer.W
+                dA = dA_prev
     
+
     def update_weights(self) -> None:
         """
         Update weights using the selected optimizer.
-        
-        TODO: Implement weight updates
-        - Use computed gradients from backward pass
-        - Apply optimizer-specific updates (SGD, Momentum, RMSprop, Adam)
-        - Update all weights and biases
+        Use computed gradients from backward pass, Apply optimizer-specific updates, Update all weights and biases
         """
-        pass
+        grads = {}
+        for i, layer in enumerate(self.layers, start=1):
+            grads[f'W{i}'] = layer.dW
+            grads[f'b{i}'] = layer.db
+
+        #self.params = self.optimizer.update(self.params, grads) 
+        #self.set_params(self.params)
+        
     
     def compute_loss(self, y_pred: np.ndarray, y_true: np.ndarray) -> float:
         """
-        Compute the loss function.
-        
-        Args:
-            y_pred: Predicted values of shape (batch_size, output_size)
-            y_true: True labels of shape (batch_size, output_size)
-            
-        Returns:
-            Loss value (scalar)
-            
-        TODO: Implement loss computation
-        - Compute cross-entropy or MSE loss
-        - Add L2 regularization term
-        - Return total loss
+        Compute the loss function. 
+        Args: y_pred: Predicted values of shape (batch_size, output_size), y_true: True labels of shape (batch_size, output_size) 
+        Returns: Loss value (scalar)
         """
-        pass
+        loss = get_loss_function(self.loss_function)(y_pred, y_true)
+        return loss 
+    ## What about L2 regularization term? 
     
     def train_step(self, X_batch: np.ndarray, y_batch: np.ndarray) -> float:
         """
@@ -161,7 +145,11 @@ class NeuralNetwork:
             
         TODO: Implement one complete training step
         """
-        pass
+        y_pred = self.forward_whole_network(X_batch)
+        loss = self.compute_loss(y_pred, y_batch)
+        self.backward(X_batch, y_batch)
+        self.update_weights()
+        return loss
     
     def predict(self, X: np.ndarray) -> np.ndarray:
         """
