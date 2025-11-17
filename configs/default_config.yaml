@@ -39,7 +39,7 @@ optimizer_params:
 # Experiment tracking
 wandb:
   project: 'neural-network-numpy'
-  entity: null  # Set your WandB username/team
+  entity: 'makssuppras1-danmarks-tekniske-universitet-dtu/neural-network-numpy/'  # Set your WandB username/team
   experiment_name: 'baseline'
   log_interval: 10  # Log every N batches
   save_model: true

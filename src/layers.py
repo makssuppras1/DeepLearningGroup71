@@ -6,9 +6,8 @@ This module contains classes for different layer types.
 
 import numpy as np
 from typing import Optional
-from initializers import *
-from neural_network import *
-from activations import *
+from .initializers import initialize_weights
+from .activations import get_activation, get_activation_derivative
 
 
 class DenseLayer:
