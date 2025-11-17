@@ -6,6 +6,7 @@ This module contains the main neural network class that will be implemented from
 
 import numpy as np
 from typing import List, Tuple, Optional
+from layers import *
 
 
 class NeuralNetwork:
@@ -61,25 +62,47 @@ class NeuralNetwork:
             l2_lambda: L2 regularization coefficient
             random_seed: Random seed for reproducibility
         """
-        # TODO: Initialize network parameters
+            
+        self.layers = []
+        input_dim = input_size
+
+        #Hidden layers
+        for hidden_units in hidden_layers:
+            layer = DenseLayer(
+                input_size=input_dim,
+                output_size=hidden_units,
+                activation=activation,
+                weight_init=weight_init,
+                seed=random_seed
+            )
+            self.layers.append(layer)
+            input_dim = hidden_units 
+
+        # Output layer
+        self.layers.append(DenseLayer(
+            input_size=input_dim,
+            output_size=output_size,
+            activation=output_activation,
+            weight_init=weight_init,
+            seed=random_seed
+        ))
+
         pass
     
-    def forward(self, X: np.ndarray) -> np.ndarray:
+    def forward_whole_network(self, X: np.ndarray) -> np.ndarray:
         """
-        Perform forward propagation through the network.
-        
+        Perform forward propagation through the network.     
         Args:
-            X: Input data of shape (batch_size, input_size)
-            
+            X: Input data of shape (batch_size, input_size)        
         Returns:
             Output predictions of shape (batch_size, output_size)
             
-        TODO: Implement forward pass
-        - Store intermediate values (pre-activations and activations) for backprop
-        - Apply activation functions
-        - Return final output
         """
-        pass
+        A = X
+        for layer in self.layers:
+            A = layer.forward(A)
+        return A
+    
     
     def backward(self, X: np.ndarray, y: np.ndarray) -> None:
         """
