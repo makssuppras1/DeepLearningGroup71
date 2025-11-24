@@ -1,10 +1,15 @@
-import numpy as np
-from typing import Optional, List
+"""
+Fully-Connected Feedforward Neural Network (FFNN) Implementation
 
-from initializers import initialize_weights
-from activations import get_activation, get_activation_derivative
-from losses import get_loss_function, get_loss_derivative, l2_regularization
-from optimizers import get_optimizer
+This module contains the main neural network class that will be implemented from scratch.
+"""
+
+import numpy as np
+from typing import List, Tuple, Optional, Dict
+from .layers import DenseLayer
+from .activations import get_activation
+from .losses import get_loss_function, get_loss_derivative, cross_entropy_loss, l2_regularization
+from .optimizers import get_optimizer
 
 
 class NeuralNetwork:
@@ -20,7 +25,7 @@ class NeuralNetwork:
         output_activation: str = 'softmax',
         learning_rate: float = 0.01,
         optimizer: str = 'sgd',
-        weight_init: str = 'xavier',
+        weight_init: str = 'random',
         l2_lambda: float = 0.0,
         random_seed: Optional[int] = None
     ):
@@ -69,70 +74,36 @@ class NeuralNetwork:
         self.last_predictions = None
         self.last_loss = None
     
-    
-    # ------------------------------------------------------------------
-    # FORWARD
-    # ------------------------------------------------------------------
-
     def forward(self, X: np.ndarray) -> np.ndarray:
-
+        # Forward pass: propagate input through all layers
+        # X: (batch_size, input_size) -> returns: (batch_size, output_size)
         A = X
-
         for layer in self.layers:
-
-            # Cache previous activation
-            layer.activation_cache['A_prev'] = A
-
-            # Linear
-            Z = A @ layer.W + layer.b
-            layer.activation_cache['Z'] = Z
-
-            # Activation
-            act = get_activation(layer.activation)
-            A = act(Z)
-
-            # Cache activation
-            layer.activation_cache['A'] = A
-
+            A = layer.forward(A)
         return A
-
-    # ------------------------------------------------------------------
-    # BACKWARD
-    # ------------------------------------------------------------------
-
-    def backward(self, X: np.ndarray, y: np.ndarray, y_pred=None):
-
+    
+    
+    def backward(self, X: np.ndarray, y: np.ndarray, y_pred: np.ndarray = None) -> None:
+        # Backward pass: compute gradients for all weights and biases
+        # X: input data, y: true labels, y_pred: optional pre-computed predictions
+        
+        # Get predictions if not provided
         if y_pred is None:
             y_pred = self.forward(X)
-
-        loss_deriv_fn = get_loss_derivative(self.loss_function)
-        dA = loss_deriv_fn(y_pred, y)
-
-        # Backprop layers in reverse
-        for layer in reversed(self.layers):
-
-            Z = layer.activation_cache['Z']
-            A_prev = layer.activation_cache['A_prev']
-
-            # dZ = dA * activation'(Z)
-            activation_grad = get_activation_derivative(layer.activation)
-            dZ = dA * activation_grad(Z)
-
-            # Gradients
-            layer.dW = A_prev.T @ dZ
-            layer.db = np.sum(dZ, axis=0)
-
-            # L2 regularization
+        
+        # Compute initial gradient from loss function
+        loss_derivative = get_loss_derivative(self.loss_function)
+        dA = loss_derivative(y_pred, y)
+        
+        # Backpropagate through layers in reverse order
+        for i in range(len(self.layers) - 1, -1, -1): #
+            layer = self.layers[i]
+            dA = layer.backward(dA)  # Compute gradients for this layer
+            
+            # Add L2 regularization term to weight gradients
             if self.l2_lambda > 0:
                 layer.dW += self.l2_lambda * layer.W
-
-            # Next gradient
-            dA = dZ @ layer.W.T
-
-    # ------------------------------------------------------------------
-    # UPDATE
-    # ------------------------------------------------------------------
-
+    
     def update_weights(self) -> None:
         # Update all weights and biases using the optimizer
         
@@ -153,11 +124,6 @@ class NeuralNetwork:
             layer.W = updated_params[f'W{i+1}']
             layer.b = updated_params[f'b{i+1}']
     
-    
-    # ------------------------------------------------------------------
-    # COMPUTE LOSS
-    # ------------------------------------------------------------------
-
     def compute_loss(self, y_pred: np.ndarray, y_true: np.ndarray) -> float:
         # Compute total loss: data loss + L2 regularization
         # y_pred: predictions, y_true: true labels -> returns: scalar loss
@@ -176,11 +142,6 @@ class NeuralNetwork:
         
         return total_loss
     
-
-    # ------------------------------------------------------------------
-    # TRAINING STEP
-    # ------------------------------------------------------------------
-
     def train_step(self, X_batch: np.ndarray, y_batch: np.ndarray) -> float:
         # One complete training step: forward -> backward -> update
         # Returns loss value for this batch
@@ -203,10 +164,12 @@ class NeuralNetwork:
         
         return loss
 
-    # ------------------------------------------------------------------
-    # PREDICT
-    # ------------------------------------------------------------------
-
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        # Get prediction probabilities (forward pass without training)
+        # X: (batch_size, input_size) -> returns: (batch_size, output_size) probabilities
+        probabilities = self.forward(X)
+        return probabilities
+    
     def predict(self, X: np.ndarray) -> np.ndarray:
         # Predict class labels: get probabilities and return argmax
         # X: (batch_size, input_size) -> returns: (batch_size,) class indices
@@ -214,17 +177,6 @@ class NeuralNetwork:
         predictions = np.argmax(probabilities, axis=1)
         return predictions
     
-    def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        # Get prediction probabilities (forward pass without training)
-        # X: (batch_size, input_size) -> returns: (batch_size, output_size) probabilities
-        probabilities = self.forward(X)
-        return probabilities
-    
-    
-    # ------------------------------------------------------------------
-    # PARAMETERS
-    # ------------------------------------------------------------------
-
     def get_params(self) -> dict:
         # Get all model parameters (weights and biases) as dictionary
         # Returns: {'W1': weights, 'b1': biases, 'W2': ..., ...}
@@ -240,3 +192,4 @@ class NeuralNetwork:
         for i, layer in enumerate(self.layers):
             layer.W = params[f'W{i+1}'].copy()
             layer.b = params[f'b{i+1}'].copy()
+
