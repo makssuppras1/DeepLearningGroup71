@@ -285,30 +285,6 @@ Large files (>300 lines):
 
 ---
 
-## Quick Start Commands
-
-```bash
-# Setup
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-wandb login
-
-# Development
-jupyter notebook notebooks/01_data_exploration.ipynb
-
-# Testing
-pytest tests/ -v
-
-# Training
-python experiments/train.py
-
-# Hyperparameter sweep
-wandb sweep experiments/sweep_config.py
-wandb agent <sweep_id>
-```
-
----
 
 ## Resources Included in Documentation
 

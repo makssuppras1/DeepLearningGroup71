@@ -25,7 +25,7 @@ class NeuralNetwork:
         output_activation: str = 'softmax',
         learning_rate: float = 0.01,
         optimizer: str = 'sgd',
-        weight_init: str = 'xavier',
+        weight_init: str = 'random',
         l2_lambda: float = 0.0,
         random_seed: Optional[int] = None
     ):
@@ -96,7 +96,7 @@ class NeuralNetwork:
         dA = loss_derivative(y_pred, y)
         
         # Backpropagate through layers in reverse order
-        for i in range(len(self.layers) - 1, -1, -1):
+        for i in range(len(self.layers) - 1, -1, -1): #
             layer = self.layers[i]
             dA = layer.backward(dA)  # Compute gradients for this layer
             
@@ -163,6 +163,12 @@ class NeuralNetwork:
         self.last_loss = loss
         
         return loss
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        # Get prediction probabilities (forward pass without training)
+        # X: (batch_size, input_size) -> returns: (batch_size, output_size) probabilities
+        probabilities = self.forward(X)
+        return probabilities
     
     def predict(self, X: np.ndarray) -> np.ndarray:
         # Predict class labels: get probabilities and return argmax
@@ -170,12 +176,6 @@ class NeuralNetwork:
         probabilities = self.predict_proba(X)
         predictions = np.argmax(probabilities, axis=1)
         return predictions
-    
-    def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        # Get prediction probabilities (forward pass without training)
-        # X: (batch_size, input_size) -> returns: (batch_size, output_size) probabilities
-        probabilities = self.forward(X)
-        return probabilities
     
     def get_params(self) -> dict:
         # Get all model parameters (weights and biases) as dictionary
@@ -192,7 +192,4 @@ class NeuralNetwork:
         for i, layer in enumerate(self.layers):
             layer.W = params[f'W{i+1}'].copy()
             layer.b = params[f'b{i+1}'].copy()
-
-
-# Additional helper functions can be added below
 

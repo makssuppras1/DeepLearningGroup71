@@ -11,9 +11,10 @@ from src.neural_network import NeuralNetwork
 from src.data_loader import load_fashion_mnist, load_cifar10, preprocess_data, create_mini_batches, train_val_split
 from src.utils import accuracy_score, plot_training_curves, set_random_seed
 import wandb
+from tqdm import tqdm
 
 
-def train_epoch(model, X_train, y_train, batch_size):
+def train_epoch(model, X_train, y_train, batch_size, show_batch_progress=False):
     # Train for one epoch: create mini-batches, train on each, compute average loss and accuracy
     batches = create_mini_batches(X_train, y_train, batch_size=batch_size, shuffle=True)
     
@@ -21,7 +22,10 @@ def train_epoch(model, X_train, y_train, batch_size):
     epoch_predictions = []
     epoch_labels = []
     
-    for X_batch, y_batch in batches:
+    # Create progress bar for batches if requested
+    batch_iter = tqdm(batches, desc="  Batches", leave=False, disable=not show_batch_progress) if show_batch_progress else batches
+    
+    for X_batch, y_batch in batch_iter:
         # Train on batch
         loss = model.train_step(X_batch, y_batch)
         epoch_losses.append(loss)
@@ -36,6 +40,10 @@ def train_epoch(model, X_train, y_train, batch_size):
         else:
             y_batch_indices = y_batch
         epoch_labels.append(y_batch_indices)
+        
+        # Update batch progress bar if enabled
+        if show_batch_progress:
+            batch_iter.set_postfix({'loss': f'{loss:.4f}'})
     
     # Compute average loss and accuracy
     avg_loss = np.mean(epoch_losses)
@@ -154,9 +162,13 @@ def train(config):
     print(f"Epochs: {config['num_epochs']}, Batch size: {config['batch_size']}, Learning rate: {config['learning_rate']}")
     print("-" * 80)
     
-    for epoch in range(config['num_epochs']):
+    # Create progress bar for epochs
+    epoch_pbar = tqdm(range(config['num_epochs']), desc="Training", unit="epoch")
+    
+    for epoch in epoch_pbar:
         # Train for one epoch
-        train_loss, train_acc = train_epoch(model, X_train, y_train, config['batch_size'])
+        show_batch_pbar = config.get('show_batch_progress', False)
+        train_loss, train_acc = train_epoch(model, X_train, y_train, config['batch_size'], show_batch_progress=show_batch_pbar)
         
         # Evaluate on validation set
         val_loss, val_acc = evaluate(model, X_val, y_val)
@@ -182,11 +194,14 @@ def train(config):
                 'val_acc': val_acc
             })
         
-        # Print progress
-        if (epoch + 1) % 5 == 0 or epoch == 0:
-            print(f"Epoch {epoch+1:3d}/{config['num_epochs']} | "
-                  f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} | "
-                  f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f}")
+        # Update progress bar with current metrics
+        epoch_pbar.set_postfix({
+            'train_loss': f'{train_loss:.4f}',
+            'train_acc': f'{train_acc:.4f}',
+            'val_loss': f'{val_loss:.4f}',
+            'val_acc': f'{val_acc:.4f}',
+            'best_val': f'{best_val_acc:.4f}'
+        })
     
     # Load best model
     if best_model_params is not None:
@@ -221,34 +236,34 @@ def train(config):
 def main():
     # Main function to run training
     
-    # Default configuration
+    # Default configuration - Optimized for highest accuracy
     config = {
         # Dataset
         'dataset': 'fashion_mnist',  # or 'cifar10'
         
         # Model architecture
         'input_size': 784,  # 28*28 for Fashion-MNIST (will be overridden based on dataset)
-        'hidden_layers': [128, 64],
+        'hidden_layers': [512, 384, 256, 128],  # Deeper/more units for better capacity
         'output_size': 10,
         
         # Activation and loss
-        'activation': 'relu',
-        'output_activation': 'softmax',
+        'activation': 'relu',  # Best for deep networks (non-saturating)
+        'output_activation': 'softmax',  # Correct for multi-class classification
         'loss': 'cross_entropy',
         
         # Training hyperparameters
         'num_epochs': 50,
         'batch_size': 32,
-        'learning_rate': 0.001,
+        'learning_rate': 0.001,  # Good default for Adam
         
         # Optimization
-        'optimizer': 'sgd',  # 'sgd', 'momentum', 'rmsprop', 'adam' (use 'sgd' for now)
+        'optimizer': 'adam',  # Best optimizer (adaptive learning rates + momentum)
         
         # Regularization
-        'l2_lambda': 0.0001,
+        'l2_lambda': 0.0001,  # Prevents overfitting
         
         # Initialization
-        'weight_init': 'xavier',  # 'random', 'xavier', 'he'
+        'weight_init': 'he',  # Best for ReLU activations (He initialization)
         
         # Other
         'val_split': 0.2,
@@ -256,7 +271,8 @@ def main():
         'project_name': 'neural-network-numpy',
         'experiment_name': 'baseline',
         'use_wandb': True,  # Set to False to disable WandB
-        'entity': 'makssuppras1-danmarks-tekniske-universitet-dtu'  # Your WandB entity
+        'entity': 'makssuppras1-danmarks-tekniske-universitet-dtu',  # Your WandB entity
+        'show_batch_progress': True  # Set to True to show batch-level progress bars
     }
     
     # Parse command line arguments to override config if needed

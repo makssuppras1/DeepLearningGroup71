@@ -8,14 +8,14 @@ dataset:
   normalize: true
   flatten: true
 
-# Model architecture
+# Model architecture - Optimized for highest accuracy
 model:
   input_size: 784  # 28*28 for Fashion-MNIST, 3072 for CIFAR-10
-  hidden_layers: [128, 64]  # List of hidden layer sizes
+  hidden_layers: [256, 128]  # Deeper/more units for better capacity
   output_size: 10
-  activation: 'relu'  # Options: 'relu', 'sigmoid', 'tanh'
-  output_activation: 'softmax'
-  weight_init: 'xavier'  # Options: 'random', 'xavier', 'he'
+  activation: 'relu'  # Best for deep networks (non-saturating)
+  output_activation: 'softmax'  # Correct for multi-class classification
+  weight_init: 'he'  # Best for ReLU activations (He initialization)
 
 # Training configuration
 training:

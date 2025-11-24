@@ -56,6 +56,9 @@ results/logs/
 # WandB
 wandb/
 
+# Documentation (personal notes)
+explanation.md
+
 # IDE
 .vscode/
 .idea/
