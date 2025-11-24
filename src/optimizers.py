@@ -36,7 +36,6 @@ class SGD(Optimizer):
         
         return updated_params
 
-
 class MomentumSGD(Optimizer):
     # SGD with Momentum: v = beta*v - lr*grad, W = W + v
     
