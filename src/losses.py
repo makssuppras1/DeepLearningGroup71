@@ -167,7 +167,9 @@ def l2_regularization(weights: list, lambda_: float) -> float:
     l2_sum = 0.0
     for W in weights:
         l2_sum += np.sum(np.square(W))
-    return (lambda_ / 2) * l2_sum
+    
+    L2 = (lambda_ / 2) * l2_sum
+    return L2
 
 
 
