@@ -221,34 +221,34 @@ def train(config):
 def main():
     # Main function to run training
     
-    # Default configuration
+    # Default configuration - Optimized for highest accuracy
     config = {
         # Dataset
         'dataset': 'fashion_mnist',  # or 'cifar10'
         
         # Model architecture
         'input_size': 784,  # 28*28 for Fashion-MNIST (will be overridden based on dataset)
-        'hidden_layers': [128, 64],
+        'hidden_layers': [256, 128],  # Deeper/more units for better capacity
         'output_size': 10,
         
         # Activation and loss
-        'activation': 'relu',
-        'output_activation': 'softmax',
+        'activation': 'relu',  # Best for deep networks (non-saturating)
+        'output_activation': 'softmax',  # Correct for multi-class classification
         'loss': 'cross_entropy',
         
         # Training hyperparameters
         'num_epochs': 50,
         'batch_size': 32,
-        'learning_rate': 0.001,
+        'learning_rate': 0.001,  # Good default for Adam
         
         # Optimization
-        'optimizer': 'sgd',  # 'sgd', 'momentum', 'rmsprop', 'adam' (use 'sgd' for now)
+        'optimizer': 'adam',  # Best optimizer (adaptive learning rates + momentum)
         
         # Regularization
-        'l2_lambda': 0.0001,
+        'l2_lambda': 0.0001,  # Prevents overfitting
         
         # Initialization
-        'weight_init': 'xavier',  # 'random', 'xavier', 'he'
+        'weight_init': 'he',  # Best for ReLU activations (He initialization)
         
         # Other
         'val_split': 0.2,
