@@ -272,7 +272,7 @@ def main():
         'experiment_name': 'baseline',
         'use_wandb': True,  # Set to False to disable WandB
         'entity': 'makssuppras1-danmarks-tekniske-universitet-dtu',  # Your WandB entity
-        'show_batch_progress': True  # Set to True to show batch-level progress bars
+        'show_batch_progress': False  # Set to True to show batch-level progress bars
     }
     
     # Parse command line arguments to override config if needed
