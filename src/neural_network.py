@@ -1,11 +1,11 @@
 import numpy as np
 from typing import Optional, List
 
-from initializers import initialize_weights
-from layers import DenseLayer
-from activations import get_activation, get_activation_derivative
-from losses import get_loss_function, get_loss_derivative, l2_regularization
-from optimizers import get_optimizer
+from .initializers import initialize_weights
+from .layers import DenseLayer
+from .activations import get_activation, get_activation_derivative
+from .losses import get_loss_function, get_loss_derivative, l2_regularization
+from .optimizers import get_optimizer
 
 
 class NeuralNetwork:
@@ -19,9 +19,9 @@ class NeuralNetwork:
         output_size: int,
         activation: str = 'relu',
         output_activation: str = 'softmax',
-        learning_rate: float = 0.01,
-        optimizer: str = 'sgd',
-        weight_init: str = 'xavier',
+        learning_rate: float = 0.001,
+        optimizer: str = 'adam',
+        weight_init: str = 'he',
         l2_lambda: float = 0.0,
         random_seed: Optional[int] = None
     ):
@@ -111,7 +111,8 @@ class NeuralNetwork:
 
         # Backprop layers in reverse
         for layer in reversed(self.layers):
-
+            m = X.shape[0]
+            
             Z = layer.activation_cache['Z']
             A_prev = layer.activation_cache['A_prev']
 
@@ -120,15 +121,16 @@ class NeuralNetwork:
             dZ = dA * activation_grad(Z)
 
             # Gradients
-            layer.dW = A_prev.T @ dZ
-            layer.db = np.sum(dZ, axis=0)
+            layer.dW = (A_prev.T @ dZ) / m
+            layer.db = np.sum(dZ, axis=0) / m
 
             # L2 regularization
             if self.l2_lambda > 0:
-                layer.dW += self.l2_lambda * layer.W
+                layer.dW += (self.l2_lambda / m) * layer.W
 
             # Next gradient
             dA = dZ @ layer.W.T
+            
 
     # ------------------------------------------------------------------
     # UPDATE
