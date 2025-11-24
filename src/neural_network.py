@@ -2,6 +2,7 @@ import numpy as np
 from typing import Optional, List
 
 from initializers import initialize_weights
+from layers import DenseLayer
 from activations import get_activation, get_activation_derivative
 from losses import get_loss_function, get_loss_derivative, l2_regularization
 from optimizers import get_optimizer
