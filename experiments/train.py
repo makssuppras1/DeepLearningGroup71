@@ -236,14 +236,14 @@ def train(config):
 def main():
     # Main function to run training
     
-    # Default configuration - Optimized for highest accuracy
+    # Default configuration - Optimized for highest accuracy (Best performing config)
     config = {
         # Dataset
-        'dataset': 'cifar10',  # or 'cifar10'
+        'dataset': 'fashion_mnist',  # or 'cifar10'
         
-        # Model architecture
-        'input_size': 3072,  # 28*28 for Fashion-MNIST (will be overridden based on dataset)
-        'hidden_layers': [1024,512, 256, 128, 64],  # Deeper/more units for better capacity
+        # Model architecture - Best performing: [512, 256, 128]
+        'input_size': 784,  # 28*28 for Fashion-MNIST (will be overridden based on dataset)
+        'hidden_layers': [512, 256, 128],  # Optimal 3-layer architecture
         'output_size': 10,
         
         # Activation and loss
@@ -251,16 +251,16 @@ def main():
         'output_activation': 'softmax',  # Correct for multi-class classification
         'loss': 'cross_entropy',
         
-        # Training hyperparameters
-        'num_epochs': 300,
-        'batch_size': 32,
-        'learning_rate': 0.001,  # Good default for Adam
+        # Training hyperparameters - Best performing settings
+        'num_epochs': 100,
+        'batch_size': 64,  # Optimal batch size
+        'learning_rate': 0.0002,  # Lower LR for stability (best performing)
         
         # Optimization
         'optimizer': 'adam',  # Best optimizer (adaptive learning rates + momentum)
         
         # Regularization
-        'l2_lambda': 0.00001,  # Prevents overfitting
+        'l2_lambda': 0.0001,  # Light regularization (best performing)
         
         # Initialization
         'weight_init': 'he',  # Best for ReLU activations (He initialization)
@@ -272,7 +272,7 @@ def main():
         'experiment_name': 'baseline',
         'use_wandb': True,  # Set to False to disable WandB
         'entity': 'makssuppras1-danmarks-tekniske-universitet-dtu',  # Your WandB entity
-        'show_batch_progress': True  # Set to True to show batch-level progress bars
+        'show_batch_progress': False  # Set to True to show batch-level progress bars
     }
     
     # Parse command line arguments to override config if needed
@@ -284,6 +284,8 @@ def main():
     parser.add_argument('--lr', type=float, default=config['learning_rate'])
     parser.add_argument('--optimizer', type=str, default=config['optimizer'])
     parser.add_argument('--name', type=str, default=config['experiment_name'])
+    parser.add_argument('--hidden-layers', type=str, default=None,
+                        help='Hidden layer sizes as comma-separated values (e.g., "1024,512,256,128")')
     parser.add_argument('--no-wandb', action='store_true', help='Disable WandB logging')
     
     args = parser.parse_args()
@@ -295,6 +297,17 @@ def main():
     config['learning_rate'] = args.lr
     config['optimizer'] = args.optimizer
     config['experiment_name'] = args.name
+    
+    # Parse hidden_layers from string to list
+    if args.hidden_layers is not None:
+        try:
+            # Parse comma-separated values and convert to integers
+            config['hidden_layers'] = [int(x.strip()) for x in args.hidden_layers.split(',')]
+            print(f"Using hidden_layers: {config['hidden_layers']}")
+        except ValueError:
+            print(f"Error: Invalid hidden_layers format '{args.hidden_layers}'. Use comma-separated integers like '1024,512,256'")
+            sys.exit(1)
+    
     if args.no_wandb:
         config['use_wandb'] = False
     
