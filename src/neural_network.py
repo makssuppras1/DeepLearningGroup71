@@ -1,11 +1,11 @@
 import numpy as np
 from typing import Optional, List
 
-from initializers import initialize_weights
-from layers import DenseLayer
-from activations import get_activation, get_activation_derivative
-from losses import get_loss_function, get_loss_derivative, l2_regularization
-from optimizers import get_optimizer
+from .initializers import initialize_weights
+from .layers import DenseLayer
+from .activations import get_activation, get_activation_derivative
+from .losses import get_loss_function, get_loss_derivative, l2_regularization
+from .optimizers import get_optimizer
 
 
 class NeuralNetwork:
@@ -19,9 +19,9 @@ class NeuralNetwork:
         output_size: int,
         activation: str = 'relu',
         output_activation: str = 'softmax',
-        learning_rate: float = 0.01,
-        optimizer: str = 'sgd',
-        weight_init: str = 'xavier',
+        learning_rate: float = 0.001,
+        optimizer: str = 'adam',
+        weight_init: str = 'he',
         l2_lambda: float = 0.0,
         random_seed: Optional[int] = None
     ):
@@ -101,6 +101,42 @@ class NeuralNetwork:
     # BACKWARD
     # ------------------------------------------------------------------
 
+    #----------------------------------------
+    # OLD BACKWARDS FUNCTION
+    #----------------------------------------
+    # def backward(self, X: np.ndarray, y: np.ndarray, y_pred=None):
+
+    #     if y_pred is None:
+    #         y_pred = self.forward(X)
+
+    #     loss_deriv_fn = get_loss_derivative(self.loss_function)
+    #     dA = loss_deriv_fn(y_pred, y)
+
+    #     # Backprop layers in reverse
+    #     for layer in reversed(self.layers):
+    #         m = X.shape[0]
+            
+    #         Z = layer.activation_cache['Z']
+    #         A_prev = layer.activation_cache['A_prev']
+
+    #         # dZ = dA * activation'(Z)
+    #         activation_grad = get_activation_derivative(layer.activation)
+    #         dZ = dA * activation_grad(Z)
+
+    #         # Gradients
+    #         layer.dW = (A_prev.T @ dZ) / m
+    #         layer.db = np.sum(dZ, axis=0) / m
+
+    #         # L2 regularization
+    #         if self.l2_lambda > 0:
+    #             layer.dW += (self.l2_lambda / m) * layer.W
+
+    #         # Next gradient
+    #         dA = dZ @ layer.W.T
+    
+    #----------------------------------------
+    # NEW BACKWARDS FUNCTION from gpt (adds special casing for softmax to avoid multiplying with the softmax activation derivative in the output layer)
+    #----------------------------------------
     def backward(self, X: np.ndarray, y: np.ndarray, y_pred=None):
 
         if y_pred is None:
@@ -109,25 +145,33 @@ class NeuralNetwork:
         loss_deriv_fn = get_loss_derivative(self.loss_function)
         dA = loss_deriv_fn(y_pred, y)
 
-        # Backprop layers in reverse
-        for layer in reversed(self.layers):
-
+        m = X.shape[0]
+        n_layers = len(self.layers)
+        for idx in range(n_layers - 1, -1, -1):
+            layer = self.layers[idx]
             Z = layer.activation_cache['Z']
             A_prev = layer.activation_cache['A_prev']
 
-            # dZ = dA * activation'(Z)
-            activation_grad = get_activation_derivative(layer.activation)
-            dZ = dA * activation_grad(Z)
+            # If using softmax + cross-entropy and the loss derivative already returns dZ,
+            # do not multiply again by the softmax Jacobian on the output layer.
+            is_output = (idx == n_layers - 1)
+            if is_output and self.output_activation == 'softmax' and self.loss_function == 'cross_entropy':
+                dZ = dA
+            else:
+                activation_grad = get_activation_derivative(layer.activation)
+                dZ = dA * activation_grad(Z)
 
-            # Gradients
-            layer.dW = A_prev.T @ dZ
-            layer.db = np.sum(dZ, axis=0)
+            # Gradients (averaged over batch)
+            layer.dW = (A_prev.T @ dZ) / m
+            layer.db = np.sum(dZ, axis=0, keepdims=True) / m
+            if layer.b.shape != layer.db.shape:
+                layer.db = layer.db.reshape(layer.b.shape)
 
-            # L2 regularization
+            # L2 regularization (scale consistent with averaging)
             if self.l2_lambda > 0:
-                layer.dW += self.l2_lambda * layer.W
+                layer.dW += (self.l2_lambda / m) * layer.W
 
-            # Next gradient
+            # propagate to previous layer
             dA = dZ @ layer.W.T
 
     # ------------------------------------------------------------------

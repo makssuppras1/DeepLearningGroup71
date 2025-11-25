@@ -6,7 +6,7 @@ This module contains the main neural network class that will be implemented from
 
 import numpy as np
 from typing import List, Tuple, Optional, Dict
-from .layers import DenseLayer
+from .layers_old import DenseLayer
 from .activations import get_activation
 from .losses import get_loss_function, get_loss_derivative, cross_entropy_loss, l2_regularization
 from .optimizers import get_optimizer
@@ -23,9 +23,9 @@ class NeuralNetwork:
         output_size: int,
         activation: str = 'relu',
         output_activation: str = 'softmax',
-        learning_rate: float = 0.01,
-        optimizer: str = 'sgd',
-        weight_init: str = 'random',
+        learning_rate: float = 0.001,
+        optimizer: str = 'adam',
+        weight_init: str = 'he',
         l2_lambda: float = 0.0,
         random_seed: Optional[int] = None
     ):
