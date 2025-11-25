@@ -239,11 +239,11 @@ def main():
     # Default configuration - Optimized for highest accuracy
     config = {
         # Dataset
-        'dataset': 'fashion_mnist',  # or 'cifar10'
+        'dataset': 'cifar10',  # or 'cifar10'
         
         # Model architecture
-        'input_size': 784,  # 28*28 for Fashion-MNIST (will be overridden based on dataset)
-        'hidden_layers': [512, 384, 256, 128],  # Deeper/more units for better capacity
+        'input_size': 3072,  # 28*28 for Fashion-MNIST (will be overridden based on dataset)
+        'hidden_layers': [1024,512, 256, 128, 64],  # Deeper/more units for better capacity
         'output_size': 10,
         
         # Activation and loss
@@ -252,7 +252,7 @@ def main():
         'loss': 'cross_entropy',
         
         # Training hyperparameters
-        'num_epochs': 50,
+        'num_epochs': 300,
         'batch_size': 32,
         'learning_rate': 0.001,  # Good default for Adam
         
@@ -260,7 +260,7 @@ def main():
         'optimizer': 'adam',  # Best optimizer (adaptive learning rates + momentum)
         
         # Regularization
-        'l2_lambda': 0.0001,  # Prevents overfitting
+        'l2_lambda': 0.00001,  # Prevents overfitting
         
         # Initialization
         'weight_init': 'he',  # Best for ReLU activations (He initialization)
