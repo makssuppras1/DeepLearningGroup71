@@ -4,6 +4,10 @@ import numpy as np
 import sys
 import os
 
+# Enable multi-threading for NumPy operations
+os.environ["OMP_NUM_THREADS"] = str(os.cpu_count())
+os.environ["OPENBLAS_NUM_THREADS"] = str(os.cpu_count())
+
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -165,9 +169,11 @@ def train(config):
     # Create progress bar for epochs
     epoch_pbar = tqdm(range(config['num_epochs']), desc="Training", unit="epoch")
 
-    # Early stopping configuration
-    patience = wandb.config.get('early_stopping_patience', 5)  # default 5? epochs
+    # Early stopping configuration - get from config, not wandb.config (which may not exist)
+    patience = config.get('early_stopping_patience', 15)  # Default 15 epochs patience
+    min_delta = config.get('early_stopping_min_delta', 0.0001)  # Minimum improvement threshold
     early_stop_counter = 0
+    best_val_loss = float('inf')  # Track best validation loss for early stopping
     
     for epoch in epoch_pbar:
         # Train for one epoch
@@ -183,20 +189,14 @@ def train(config):
         train_accs.append(train_acc)
         val_accs.append(val_acc)
         
-        # Save best model
-        if val_acc > best_val_acc:
+        # Save best model (based on validation accuracy)
+        if val_acc > best_val_acc + min_delta:  # Only count as improvement if significant
             best_val_acc = val_acc
+            best_val_loss = val_loss
             best_model_params = model.get_params()
             early_stop_counter = 0  # reset counter if improvement
         else:
             early_stop_counter += 1  # no improvement, increment counter
-
-        # Early stopping check
-        if early_stop_counter >= patience:
-            print(f"\nEarly stopping triggered at epoch {epoch}")
-            if best_model_params is not None:
-                model.set_params(best_model_params)
-            break
         
         # Log to WandB
         if use_wandb and run is not None:
@@ -205,7 +205,8 @@ def train(config):
                 'train_loss': train_loss,
                 'val_loss': val_loss,
                 'train_acc': train_acc,
-                'val_acc': val_acc
+                'val_acc': val_acc,
+                'early_stop_counter': early_stop_counter
             })
         
         # Update progress bar with current metrics
@@ -214,17 +215,31 @@ def train(config):
             'train_acc': f'{train_acc:.4f}',
             'val_loss': f'{val_loss:.4f}',
             'val_acc': f'{val_acc:.4f}',
-            'best_val': f'{best_val_acc:.4f}'
+            'best_val': f'{best_val_acc:.4f}',
+            'patience': f'{patience - early_stop_counter}/{patience}'
         })
+
+        # Early stopping check (after logging and progress bar update)
+        if early_stop_counter >= patience and epoch >= patience:  # Don't stop too early
+            print(f"\n⏹️  Early stopping triggered at epoch {epoch + 1}/{config['num_epochs']}")
+            print(f"   No improvement for {patience} epochs. Best val_acc: {best_val_acc:.4f}")
+            if best_model_params is not None:
+                model.set_params(best_model_params)
+            break
+    
+    # Close progress bar
+    epoch_pbar.close()
     
     # Load best model
     if best_model_params is not None:
         model.set_params(best_model_params)
-        print(f"\nBest validation accuracy: {best_val_acc:.4f}")
+        print(f"\n✅ Best validation accuracy: {best_val_acc:.4f}")
+    else:
+        print(f"\n⚠️  Warning: No model improvements recorded")
     
     # Evaluate on test set
     test_loss, test_acc = evaluate(model, X_test, y_test)
-    print(f"Test Loss: {test_loss:.4f} | Test Acc: {test_acc:.4f}")
+    print(f"📊 Test Loss: {test_loss:.4f} | Test Acc: {test_acc:.4f}")
     
     # Log test metrics
     if use_wandb and run is not None:
@@ -268,7 +283,7 @@ def main():
         # Training hyperparameters
         'num_epochs': 300,
         'batch_size': 32,
-        'learning_rate': 0.001,  # Good default for Adam
+        'learning_rate': 0.001,
         
         # Optimization
         'optimizer': 'adam',  # Best optimizer (adaptive learning rates + momentum)
@@ -279,6 +294,10 @@ def main():
         # Initialization
         'weight_init': 'he',  # Best for ReLU activations (He initialization)
         
+        # Early stopping
+        'early_stopping_patience': 15,  # Stop if no improvement for 15 epochs
+        'early_stopping_min_delta': 0.0001,  # Minimum improvement to count as progress
+        
         # Other
         'val_split': 0.2,
         'random_seed': 42,
@@ -286,7 +305,7 @@ def main():
         'experiment_name': 'baseline',
         'use_wandb': True,  # Set to False to disable WandB
         'entity': 'makssuppras1-danmarks-tekniske-universitet-dtu',  # Your WandB entity
-        'show_batch_progress': True  # Set to True to show batch-level progress bars
+        'show_batch_progress': False  # Set to True to show batch-level progress bars
     }
     
     # Parse command line arguments to override config if needed
@@ -298,6 +317,10 @@ def main():
     parser.add_argument('--lr', type=float, default=config['learning_rate'])
     parser.add_argument('--optimizer', type=str, default=config['optimizer'])
     parser.add_argument('--name', type=str, default=config['experiment_name'])
+    parser.add_argument('--hidden-layers', type=str, default=None,
+                        help='Hidden layer sizes as comma-separated values (e.g., "1024,512,256,128")')
+    parser.add_argument('--patience', type=int, default=config.get('early_stopping_patience', 15),
+                        help='Early stopping patience (epochs without improvement)')
     parser.add_argument('--no-wandb', action='store_true', help='Disable WandB logging')
     
     args = parser.parse_args()
@@ -309,6 +332,18 @@ def main():
     config['learning_rate'] = args.lr
     config['optimizer'] = args.optimizer
     config['experiment_name'] = args.name
+    config['early_stopping_patience'] = args.patience
+    
+    # Parse hidden_layers from string to list
+    if args.hidden_layers is not None:
+        try:
+            # Parse comma-separated values and convert to integers
+            config['hidden_layers'] = [int(x.strip()) for x in args.hidden_layers.split(',')]
+            print(f"Using hidden_layers: {config['hidden_layers']}")
+        except ValueError:
+            print(f"Error: Invalid hidden_layers format '{args.hidden_layers}'. Use comma-separated integers like '1024,512,256'")
+            sys.exit(1)
+    
     if args.no_wandb:
         config['use_wandb'] = False
     
