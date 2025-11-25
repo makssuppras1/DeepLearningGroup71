@@ -77,26 +77,12 @@ def evaluate(model, X_val, y_val):
 
 def train(config):
     # Complete training pipeline: WandB init, load data, create model, train, log metrics
-    
-    # Initialize Weights & Biases for experiment tracking (optional)
+    # Use Weights & Biases run if available; initialization is performed in main()
     use_wandb = config.get('use_wandb', True)
-    run = None
-    if use_wandb:
-        try:
-            # Initialize WandB run
-            run = wandb.init(
-                project=config.get('project_name', 'neural-network-numpy'),
-                name=config.get('experiment_name', 'baseline'),
-                entity=config.get('entity', None),  # Optional: set if using team account
-                config=config,
-                resume='allow'  # Allow resuming if run already exists
-            )
-            print(f"✅ WandB initialized: {run.url}")
-        except Exception as e:
-            print(f"⚠️  Warning: WandB initialization failed ({e})")
-            print("   Continuing without WandB logging. To fix: run 'wandb login'")
-            use_wandb = False
-            run = None
+    try:
+        run = wandb.run if wandb.run is not None else None
+    except Exception:
+        run = None
     
     # Set random seed
     set_random_seed(config['random_seed'])
@@ -166,7 +152,7 @@ def train(config):
     epoch_pbar = tqdm(range(config['num_epochs']), desc="Training", unit="epoch")
 
     # Early stopping configuration
-    patience = wandb.config.get('early_stopping_patience', 5)  # default 5? epochs
+    patience = config.get('early_stopping_patience', 5)
     early_stop_counter = 0
     
     for epoch in epoch_pbar:
@@ -257,7 +243,7 @@ def main():
         
         # Model architecture
         'input_size': 3072,  # 28*28 for Fashion-MNIST (will be overridden based on dataset)
-        'hidden_layers': [1024,512, 256, 128, 64],  # Deeper/more units for better capacity
+        'hidden_layers': [128,64,32,16],  # Deeper/more units for better capacity
         'output_size': 10,
         
         # Activation and loss
@@ -266,7 +252,7 @@ def main():
         'loss': 'cross_entropy',
         
         # Training hyperparameters
-        'num_epochs': 300,
+        'num_epochs': 400,
         'batch_size': 32,
         'learning_rate': 0.001,  # Good default for Adam
         
@@ -274,7 +260,7 @@ def main():
         'optimizer': 'adam',  # Best optimizer (adaptive learning rates + momentum)
         
         # Regularization
-        'l2_lambda': 0.00001,  # Prevents overfitting
+        'l2_lambda': 0.0001,  # Prevents overfitting
         
         # Initialization
         'weight_init': 'he',  # Best for ReLU activations (He initialization)
@@ -293,11 +279,12 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description='Train neural network')
     parser.add_argument('--dataset', type=str, default=config['dataset'])
-    parser.add_argument('--epochs', type=int, default=config['num_epochs'])
-    parser.add_argument('--batch-size', type=int, default=config['batch_size'])
-    parser.add_argument('--lr', type=float, default=config['learning_rate'])
-    parser.add_argument('--optimizer', type=str, default=config['optimizer'])
-    parser.add_argument('--name', type=str, default=config['experiment_name'])
+    # Allow flags to be present without explicit values (wandb agent may inject flags)
+    parser.add_argument('--epochs', type=int, nargs='?', const=config['num_epochs'], default=config['num_epochs'])
+    parser.add_argument('--batch-size', type=int, nargs='?', const=config['batch_size'], default=config['batch_size'])
+    parser.add_argument('--lr', type=float, nargs='?', const=config['learning_rate'], default=config['learning_rate'])
+    parser.add_argument('--optimizer', type=str, nargs='?', const=config['optimizer'], default=config['optimizer'])
+    parser.add_argument('--name', type=str, nargs='?', const=config['experiment_name'], default=config['experiment_name'])
     parser.add_argument('--no-wandb', action='store_true', help='Disable WandB logging')
     
     args = parser.parse_args()
@@ -311,7 +298,33 @@ def main():
     config['experiment_name'] = args.name
     if args.no_wandb:
         config['use_wandb'] = False
-    
+    # Initialize WandB here so `wandb.config` can override values (useful for sweeps)
+    if config.get('use_wandb', True):
+        try:
+            run = wandb.init(
+                project=config.get('project_name', 'neural-network-numpy'),
+                name=config.get('experiment_name', 'baseline'),
+                entity=config.get('entity', None),
+                config=config,
+                resume='allow'
+            )
+            print(f"✅ WandB initialized: {run.url}")
+
+            # Merge wandb.config into local config so sweep-provided values override defaults
+            try:
+                cfg_override = dict(wandb.config)
+            except Exception:
+                cfg_override = {k: wandb.config[k] for k in wandb.config}
+
+            # Update only keys present in wandb.config (this allows sweep to override)
+            for k, v in cfg_override.items():
+                config[k] = v
+
+        except Exception as e:
+            print(f"⚠️  Warning: WandB initialization failed in main() ({e})")
+            print("   Continuing without WandB logging. To fix: run 'wandb login'")
+            config['use_wandb'] = False
+
     # Run training
     train(config)
     
