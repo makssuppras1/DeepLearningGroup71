@@ -1,9 +1,3 @@
-"""
-Fully-Connected Feedforward Neural Network (FFNN) Implementation
-
-This module contains the main neural network class that will be implemented from scratch.
-"""
-
 import numpy as np
 from typing import List, Tuple, Optional, Dict
 from .layers import DenseLayer
