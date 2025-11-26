@@ -8,7 +8,7 @@ import pickle
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.neural_network import NeuralNetwork
-from src.data_loader import load_fashion_mnist, load_cifar10, preprocess_data, create_mini_batches, train_val_split
+from src.data_loader import load_fashion_mnist, load_cifar10, download_fashion_mnist, download_cifar10, preprocess_data, create_mini_batches, train_val_split
 from src.utils import accuracy_score, set_random_seed
 from src.hpc_utils import get_data_dir, get_results_dir, setup_hpc_directories
 import wandb
@@ -26,15 +26,22 @@ def labels_to_indices(y):
 
 def load_data(dataset_name, data_dir):
     # Load dataset and return data with input size
+    # Downloads data if it doesn't exist
     dataset_configs = {
-        'fashion_mnist': (load_fashion_mnist, 784),
-        'cifar10': (load_cifar10, 3072)
+        'fashion_mnist': (load_fashion_mnist, download_fashion_mnist, 784),
+        'cifar10': (load_cifar10, download_cifar10, 3072)
     }
     
     if dataset_name not in dataset_configs:
         raise ValueError(f"Unknown dataset: {dataset_name}. Choose from {list(dataset_configs.keys())}")
     
-    load_func, input_size = dataset_configs[dataset_name]
+    load_func, download_func, input_size = dataset_configs[dataset_name]
+    
+    # Download data if it doesn't exist
+    print(f"Checking for {dataset_name} data in {data_dir}...")
+    download_func(data_dir)
+    
+    # Load the dataset
     X_train_full, y_train_full, X_test, y_test = load_func(data_dir)
     
     return X_train_full, y_train_full, X_test, y_test, input_size
