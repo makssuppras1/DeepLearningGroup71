@@ -6,7 +6,7 @@ This guide explains how to use DTU's HPC system for training your neural network
 
 The HPC (High Performance Computing) system provides:
 - **Faster training**: More powerful CPUs/GPUs than your local machine
-- **Parallel experiments**: Run multiple hyperparameter sweeps simultaneously
+- **Parallel experiments**: Run multiple hyperparameter sweeps simultaneously (WandB sweeps support multiple agents, and HPC can run multiple jobs in parallel)
 - **Long-running jobs**: Better suited for 150+ epoch training runs
 - **Temporary storage**: Scratch directory (`$BLACKHOLE`) for experiments
 
@@ -21,7 +21,29 @@ The HPC (High Performance Computing) system provides:
 
 1. **SSH access to DTU HPC**
    - You should have received credentials from your course
-   - Test connection: `ssh <your-username>@hpc.dtu.dk`
+   - Test connection: `ssh s204614@hpc.dtu.dk`
+   
+   **Testing your SSH connection:**
+   ```bash
+   # Basic connection test (replace with your username)
+   ssh <your-username>@hpc.dtu.dk
+   
+   # If connection succeeds, you should see a login prompt
+   # After logging in, verify you're on HPC:
+   hostname  # Should show something like hpc.dtu.dk or similar
+   
+   # Check if BLACKHOLE is set
+   echo $BLACKHOLE
+   
+   # Exit when done testing
+   exit
+   ```
+   
+   **Common SSH issues:**
+   - **"Permission denied"**: Check your username and password
+   - **"Connection refused"**: HPC might be down or you need VPN
+   - **"Host key verification failed"**: Run `ssh-keygen -R hpc.dtu.dk` to remove old key
+   - **Need to use VPN**: Some universities require VPN connection first
 
 2. **BLACKHOLE environment variable**
    - Set automatically when you log in to HPC
@@ -156,7 +178,15 @@ scancel <job-id>
 
 ## Running Hyperparameter Sweeps
 
-WandB sweeps are perfect for HPC - run multiple agents in parallel:
+WandB sweeps support multiple agents running in parallel - each agent pulls a different configuration from the sweep queue and runs it independently. Combined with HPC's ability to run multiple jobs simultaneously, this allows you to explore hyperparameter space much faster.
+
+**How it works:**
+- WandB sweep maintains a queue of hyperparameter configurations
+- Multiple agents can connect to the same sweep and pull different configs
+- Each agent runs independently (on different HPC nodes/cores)
+- Results are automatically aggregated in WandB
+
+**Run multiple agents in parallel:**
 
 ```bash
 # On HPC, start multiple sweep agents
