@@ -14,7 +14,6 @@ from src.hpc_utils import get_data_dir, get_results_dir, setup_hpc_directories
 import wandb
 from tqdm import tqdm
 
-
 def load_data(dataset_name, data_dir):
     """Load and return dataset."""
     if dataset_name == 'fashion_mnist':
