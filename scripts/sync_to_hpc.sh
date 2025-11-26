@@ -2,7 +2,7 @@
 # Script to sync project from local machine to HPC
 # Usage: ./sync_to_hpc.sh [username@hpc.dtu.dk]
 
-HPC_HOST=${1:-"<your-username>@hpc.dtu.dk"}
+HPC_HOST=${1:-"<your-username>@login9.hpc.dtu.dk"}
 PROJECT_NAME="DeepLearningGroup71"
 
 # Get project root directory (parent of scripts/)

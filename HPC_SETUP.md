@@ -21,12 +21,13 @@ The HPC (High Performance Computing) system provides:
 
 1. **SSH access to DTU HPC**
    - You should have received credentials from your course
-   - Test connection: `ssh s204614@hpc.dtu.dk`
+   - Test connection: `ssh <your-username>@login9.hpc.dtu.dk`
+   - **Note**: The correct hostname is `login9.hpc.dtu.dk` (not `hpc.dtu.dk`)
    
    **Testing your SSH connection:**
    ```bash
    # Basic connection test (replace with your username)
-   ssh <your-username>@hpc.dtu.dk
+   ssh <your-username>@login9.hpc.dtu.dk
    
    # If connection succeeds, you should see a login prompt
    # After logging in, verify you're on HPC:
@@ -41,9 +42,10 @@ The HPC (High Performance Computing) system provides:
    
    **Common SSH issues:**
    - **"Permission denied"**: Check your username and password
-   - **"Connection refused"**: HPC might be down or you need VPN
-   - **"Host key verification failed"**: Run `ssh-keygen -R hpc.dtu.dk` to remove old key
-   - **Need to use VPN**: Some universities require VPN connection first
+   - **"Connection refused"**: HPC might be down or you need VPN (connect to `vpn.dtu.dk`)
+   - **"Host key verification failed"**: Run `ssh-keygen -R login9.hpc.dtu.dk` to remove old key
+   - **"Could not resolve hostname"**: Make sure you're connected to DTU VPN (`vpn.dtu.dk`)
+   - **Need to use VPN**: Connect to DTU VPN first if accessing from outside campus
 
 2. **BLACKHOLE environment variable**
    - Set automatically when you log in to HPC
@@ -55,9 +57,14 @@ The HPC (High Performance Computing) system provides:
 ### 1. Connect to HPC
 
 ```bash
-ssh <your-username>@hpc.dtu.dk
+# Connect via SSH (requires VPN if off-campus)
+ssh <your-username>@login9.hpc.dtu.dk
 cd $BLACKHOLE
 ```
+
+**Note**: If you're off-campus, connect to DTU VPN first:
+- VPN server: `vpn.dtu.dk`
+- Use Cisco AnyConnect or your VPN client
 
 ### 2. Clone/Upload Your Project
 
@@ -73,7 +80,7 @@ cd DeepLearningGroup71
 # From your local machine:
 rsync -av --exclude='__pycache__' --exclude='*.pyc' --exclude='.git' \
   /path/to/DeepLearningGroup71/ \
-  <your-username>@hpc.dtu.dk:$BLACKHOLE/DeepLearningGroup71/
+  <your-username>@login9.hpc.dtu.dk:$BLACKHOLE/DeepLearningGroup71/
 ```
 
 ### 3. Set Up Environment
@@ -98,7 +105,7 @@ pip install -r requirements.txt
 # Sync data directory to HPC
 rsync -av --progress \
   /path/to/DeepLearningGroup71/data/ \
-  <your-username>@hpc.dtu.dk:$BLACKHOLE/DeepLearningGroup71/data/
+  <your-username>@login9.hpc.dtu.dk:$BLACKHOLE/DeepLearningGroup71/data/
 ```
 
 **Or use the utility script:**
@@ -186,28 +193,134 @@ WandB sweeps support multiple agents running in parallel - each agent pulls a di
 - Each agent runs independently (on different HPC nodes/cores)
 - Results are automatically aggregated in WandB
 
-**Run multiple agents in parallel:**
+### Step 1: Login to WandB
 
 ```bash
-# On HPC, start multiple sweep agents
-# Terminal 1:
-wandb agent <sweep-id>
-
-# Terminal 2:
-wandb agent <sweep-id>
-
-# Terminal 3:
-wandb agent <sweep-id>
-# ... etc
+# On HPC:
+cd $BLACKHOLE/DeepLearningGroup71
+source deeplearning/bin/activate
+wandb login
+# Enter your WandB API key when prompted
 ```
 
-Or submit as separate jobs:
+### Step 2: Create a Sweep
+
 ```bash
-# Submit 5 parallel sweep agents
+# On HPC, create a sweep using one of the predefined configs:
+cd $BLACKHOLE/DeepLearningGroup71
+source deeplearning/bin/activate
+
+# Option A: Use the helper script
+./scripts/create_sweep.sh random
+# Available configs: random, bayes, activations
+
+# Option B: With WandB entity (if using team account)
+./scripts/create_sweep.sh random neural-network-numpy makssuppras1-danmarks-tekniske-universitet-dtu
+
+# Option C: Use Python directly
+python experiments/sweep_config.py random neural-network-numpy
+```
+
+The script will output a **sweep ID** (e.g., `abc123def456`). **Save this ID!** You'll need it to run agents.
+
+**Available sweep configurations:**
+- **`random`**: Random search - explores wide hyperparameter space
+- **`bayes`**: Bayesian optimization - efficient search using previous results
+- **`activations`**: Grid search - compares activation functions
+
+### Step 3: Run Sweep Agents
+
+**Option A: Submit as SLURM jobs (recommended for HPC)**
+
+```bash
+# Submit a single agent (runs 10 configurations by default)
+SWEEP_ID="your-sweep-id-here"
+sbatch scripts/submit_sweep_agent.sh $SWEEP_ID
+
+# Submit multiple agents in parallel (5 agents, each running 10 configs)
 for i in {1..5}; do
-  sbatch scripts/submit_sweep_agent.sh <sweep-id>
+  sbatch scripts/submit_sweep_agent.sh $SWEEP_ID 10
 done
+
+# With WandB entity (if using team account)
+ENTITY="makssuppras1-danmarks-tekniske-universitet-dtu"
+for i in {1..5}; do
+  sbatch scripts/submit_sweep_agent.sh $SWEEP_ID 10 $ENTITY
+done
+
+# Check job status
+squeue -u $USER
+
+# Monitor progress in WandB dashboard
+# Results are automatically synced to WandB cloud
 ```
+
+**Option B: Run interactively (for testing)**
+
+```bash
+# On HPC login node (not recommended for long runs)
+cd $BLACKHOLE/DeepLearningGroup71
+source deeplearning/bin/activate
+wandb agent <sweep-id> --count 1  # Test with 1 run first
+```
+
+### Step 4: Monitor Sweep Progress
+
+- **WandB Dashboard**: View results at https://wandb.ai
+- **Job Output**: Check SLURM output files
+  ```bash
+  tail -f slurm-sweep-<job-id>.out
+  ```
+
+### Step 5: Cancel or Stop Sweep
+
+```bash
+# Cancel specific job
+scancel <job-id>
+
+# Cancel all your sweep jobs
+scancel -u $USER -n wandb_sweep
+
+# Stop sweep in WandB (keeps completed runs)
+# Go to WandB dashboard and click "Stop" on the sweep
+```
+
+### Example: Complete Sweep Workflow
+
+```bash
+# 1. Connect to HPC
+ssh s204614@login9.hpc.dtu.dk
+cd $BLACKHOLE/DeepLearningGroup71
+source deeplearning/bin/activate
+
+# 2. Create sweep
+./scripts/create_sweep.sh random
+# Output: Created sweep: abc123def456
+# Save the sweep ID!
+
+# 3. Submit 5 parallel agents (each runs 10 configs = 50 total runs)
+SWEEP_ID="abc123def456"
+for i in {1..5}; do
+  sbatch scripts/submit_sweep_agent.sh $SWEEP_ID 10
+done
+
+# 4. Monitor jobs
+squeue -u $USER
+watch -n 5 squeue -u $USER  # Auto-refresh every 5 seconds
+
+# 5. Check results in WandB dashboard
+# Visit: https://wandb.ai/your-entity/neural-network-numpy/sweeps/<sweep-id>
+```
+
+### Tips for Efficient Sweeps
+
+1. **Start small**: Test with 1-2 agents first to verify everything works
+2. **Monitor resources**: Check `squeue` and `getquota_work3.sh` regularly
+3. **Use appropriate config**: 
+   - `random` for initial exploration
+   - `bayes` for focused optimization
+4. **Set reasonable counts**: Each agent runs `count` configurations. 10-20 per agent is usually good.
+5. **Check WandB early**: Verify runs are logging correctly before submitting many agents
 
 ## Syncing Results Back
 
@@ -216,7 +329,7 @@ done
 ```bash
 # From your local machine:
 rsync -av --progress \
-  <your-username>@hpc.dtu.dk:$BLACKHOLE/DeepLearningGroup71/results/ \
+  <your-username>@login9.hpc.dtu.dk:$BLACKHOLE/DeepLearningGroup71/results/ \
   /path/to/DeepLearningGroup71/results/
 ```
 
@@ -234,7 +347,7 @@ python -c "from src.hpc_utils import sync_results_from_hpc; sync_results_from_hp
 1. **Morning:**
    ```bash
    # Connect to HPC
-   ssh <username>@hpc.dtu.dk
+   ssh <username>@login9.hpc.dtu.dk
    cd $BLACKHOLE/DeepLearningGroup71
    
    # Pull latest code
@@ -257,7 +370,7 @@ python -c "from src.hpc_utils import sync_results_from_hpc; sync_results_from_hp
    ```bash
    # Sync results back to local
    # (from local machine)
-   rsync -av <username>@hpc.dtu.dk:$BLACKHOLE/DeepLearningGroup71/results/ ./results/
+   rsync -av <username>@login9.hpc.dtu.dk:$BLACKHOLE/DeepLearningGroup71/results/ ./results/
    ```
 
 ### Weekly Workflow
@@ -329,24 +442,64 @@ wandb status
 
 ```bash
 # Connect to HPC
-ssh <username>@hpc.dtu.dk
+ssh <username>@login9.hpc.dtu.dk
 
 # Navigate to scratch
-cd $BLACKHOLE
+cd $BLACKHOLE/DeepLearningGroup71
+
+# Activate environment
+source deeplearning/bin/activate
 
 # Check HPC status
 python -c "from src.hpc_utils import print_hpc_info; print_hpc_info()"
 
-# Submit job
+# Submit training job
 sbatch scripts/submit_job.sh
+
+# Create WandB sweep
+./scripts/create_sweep.sh random
+
+# Submit sweep agent (replace SWEEP_ID with actual ID)
+sbatch scripts/submit_sweep_agent.sh <SWEEP_ID> 10
+
+# Submit multiple parallel sweep agents
+for i in {1..5}; do sbatch scripts/submit_sweep_agent.sh <SWEEP_ID> 10; done
 
 # Check jobs
 squeue -u $USER
 
+# Monitor job output
+tail -f slurm-<job-id>.out
+
 # Cancel job
 scancel <job-id>
 
-# Sync results (from local)
-rsync -av <username>@hpc.dtu.dk:$BLACKHOLE/DeepLearningGroup71/results/ ./results/
+# Cancel all sweep jobs
+scancel -u $USER -n wandb_sweep
+
+# Sync results (from local machine)
+rsync -av <username>@login9.hpc.dtu.dk:$BLACKHOLE/DeepLearningGroup71/results/ ./results/
+```
+
+## WandB Sweep Quick Start
+
+```bash
+# 1. Login to WandB
+wandb login
+
+# 2. Create sweep
+cd $BLACKHOLE/DeepLearningGroup71
+source deeplearning/bin/activate
+./scripts/create_sweep.sh random
+# Save the sweep ID that's printed!
+
+# 3. Submit agents
+SWEEP_ID="your-sweep-id-here"
+for i in {1..5}; do
+  sbatch scripts/submit_sweep_agent.sh $SWEEP_ID 10
+done
+
+# 4. Monitor in WandB dashboard
+# Visit: https://wandb.ai
 ```
 

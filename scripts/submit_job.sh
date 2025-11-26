@@ -87,6 +87,6 @@ echo "=========================================="
 echo ""
 echo "⚠️  REMINDER: Sync results back to your local machine!"
 echo "   From local machine, run:"
-echo "   rsync -av <username>@hpc.dtu.dk:\$BLACKHOLE/DeepLearningGroup71/results/ ./results/"
+echo "   rsync -av <username>@login9.hpc.dtu.dk:\$BLACKHOLE/DeepLearningGroup71/results/ ./results/"
 
 
