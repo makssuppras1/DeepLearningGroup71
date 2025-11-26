@@ -8,7 +8,6 @@ import os
 os.environ["OMP_NUM_THREADS"] = str(os.cpu_count())
 os.environ["OPENBLAS_NUM_THREADS"] = str(os.cpu_count())
 
-# Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.neural_network import NeuralNetwork
@@ -151,8 +150,12 @@ def train(config):
         optimizer=config['optimizer'],
         weight_init=config['weight_init'],
         l2_lambda=config['l2_lambda'],
+        dropout_rate=config.get('dropout_rate', 0.0),  # Dropout hyperparameter (0.0 = disabled)
         random_seed=config['random_seed']
     )
+    
+    # Ensure model is in training mode (enables dropout)
+    model.train()
     
     # Training loop
     train_losses = []
@@ -268,28 +271,30 @@ def main():
     # Default configuration - Optimized for highest accuracy
     config = {
         # Dataset
-        'dataset': 'cifar10',  # or 'cifar10'
+        'dataset': 'cifar10',  # or 'fashion_mnist'
         
-        # Model architecture
-        'input_size': 3072,  # 28*28 for Fashion-MNIST (will be overridden based on dataset)
-        'hidden_layers': [1024,512, 256, 128, 64],  # Deeper/more units for better capacity
+        # Model architecture - Scaled up from Fashion-MNIST best [512,256,128]
+        # CIFAR-10 has 3x input size (3072 vs 784), so we scale architecture proportionally
+        'input_size': 3072,  # 32*32*3 for CIFAR-10 (will be overridden based on dataset)
+        'hidden_layers': [1024, 512, 256],  # Scaled from [512,256,128] - maintains same ratio
         'output_size': 10,
         
         # Activation and loss
-        'activation': 'relu',  # Best for deep networks (non-saturating)
+        'activation': 'relu',  # Best for deep networks (non-saturating) - same as Fashion-MNIST
         'output_activation': 'softmax',  # Correct for multi-class classification
         'loss': 'cross_entropy',
         
-        # Training hyperparameters
-        'num_epochs': 300,
-        'batch_size': 32,
-        'learning_rate': 0.001,
+        # Training hyperparameters - Adapted from Fashion-MNIST best config
+        'num_epochs': 150,  # More epochs needed for CIFAR-10 complexity
+        'batch_size': 64,  # Same as Fashion-MNIST best - good balance
+        'learning_rate': 0.0003,  # Slightly higher than Fashion-MNIST (0.0002) for faster convergence
         
         # Optimization
         'optimizer': 'adam',  # Best optimizer (adaptive learning rates + momentum)
         
         # Regularization
         'l2_lambda': 0.00001,  # Prevents overfitting
+        'dropout_rate': 0.0,  # Dropout rate (0.0-0.5). 0.0 = disabled. Common: 0.2-0.5 for hidden layers
         
         # Initialization
         'weight_init': 'he',  # Best for ReLU activations (He initialization)
@@ -321,6 +326,8 @@ def main():
                         help='Hidden layer sizes as comma-separated values (e.g., "1024,512,256,128")')
     parser.add_argument('--patience', type=int, default=config.get('early_stopping_patience', 15),
                         help='Early stopping patience (epochs without improvement)')
+    parser.add_argument('--dropout', type=float, default=config.get('dropout_rate', 0.0),
+                        help='Dropout rate (0.0-0.5). 0.0 = disabled. Common: 0.2-0.5')
     parser.add_argument('--no-wandb', action='store_true', help='Disable WandB logging')
     
     args = parser.parse_args()
@@ -333,6 +340,7 @@ def main():
     config['optimizer'] = args.optimizer
     config['experiment_name'] = args.name
     config['early_stopping_patience'] = args.patience
+    config['dropout_rate'] = args.dropout
     
     # Parse hidden_layers from string to list
     if args.hidden_layers is not None:
