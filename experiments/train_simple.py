@@ -76,7 +76,7 @@ def evaluate(model, X_val, y_val):
 
 
 def init_wandb(config):
-    # Initialize WandB if enabled. Returns True if WandB is active, False otherwise
+    # Initialize WandB if enabled. Returns run object if WandB is active, None otherwise
     use_wandb = config.get('use_wandb', True)
     
     if not use_wandb:
