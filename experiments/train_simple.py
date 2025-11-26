@@ -4,7 +4,6 @@ import numpy as np
 import sys
 import os
 import pickle
-import argparse
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -214,64 +213,6 @@ def train(config):
             pass
 
 
-def parse_args():
-    # Parse command line arguments and return parsed args
-    # Use parse_known_args() to allow WandB sweep parameters that aren't explicitly defined
-    parser = argparse.ArgumentParser(description='Train neural network', allow_abbrev=False)
-    parser.add_argument('--dataset', type=str, help='Dataset name (cifar10 or fashion_mnist)')
-    parser.add_argument('--epochs', type=int, help='Number of training epochs')
-    parser.add_argument('--batch-size', type=int, dest='batch_size', help='Batch size')
-    parser.add_argument('--batch_size', type=int, help='Batch size (alternative format)')
-    parser.add_argument('--lr', type=float, help='Learning rate')
-    parser.add_argument('--learning-rate', type=float, dest='learning_rate', help='Learning rate')
-    parser.add_argument('--learning_rate', type=float, help='Learning rate (alternative format)')
-    parser.add_argument('--optimizer', type=str, help='Optimizer name')
-    parser.add_argument('--name', type=str, help='Experiment name')
-    parser.add_argument('--hidden-layers', type=str, dest='hidden_layers', help='Comma-separated hidden layer sizes')
-    parser.add_argument('--hidden_layers', type=str, help='Hidden layers (alternative format)')
-    parser.add_argument('--no-wandb', action='store_true', help='Disable WandB logging')
-    
-    # Add all sweep parameters to avoid "unrecognized arguments" error
-    parser.add_argument('--activation', type=str, help='Activation function')
-    parser.add_argument('--output_activation', type=str, help='Output activation')
-    parser.add_argument('--num_epochs', type=int, help='Number of epochs')
-    parser.add_argument('--weight_init', type=str, help='Weight initialization')
-    parser.add_argument('--dropout_rate', type=float, help='Dropout rate')
-    parser.add_argument('--l2_lambda', type=float, help='L2 regularization')
-    parser.add_argument('--output_size', type=int, help='Output size')
-    parser.add_argument('--val_split', type=float, help='Validation split')
-    parser.add_argument('--random_seed', type=int, help='Random seed')
-    parser.add_argument('--use_wandb', type=str, help='Use WandB (string)')
-    
-    # Use parse_known_args to ignore any other unknown args (from WandB)
-    # This prevents errors when WandB passes parameters we don't explicitly handle
-    args, unknown = parser.parse_known_args()
-    if unknown:
-        # Silently ignore unknown args - they're from WandB sweep and handled via wandb.config
-        pass
-    return args
-
-
-def update_config_from_args(config, args):
-    # Update config dictionary with command line arguments (only if provided)
-    if args.dataset:
-        config['dataset'] = args.dataset
-    if args.epochs:
-        config['num_epochs'] = args.epochs
-    if args.batch_size:
-        config['batch_size'] = args.batch_size
-    if args.lr:
-        config['learning_rate'] = args.lr
-    if args.optimizer:
-        config['optimizer'] = args.optimizer
-    if args.name:
-        config['experiment_name'] = args.name
-    if args.hidden_layers:
-        config['hidden_layers'] = [int(x.strip()) for x in args.hidden_layers.split(',')]
-    if args.no_wandb:
-        config['use_wandb'] = False
-
-
 def main():
     # Main function - works for both standalone runs and WandB sweeps
     # Initialize wandb run (wandb.agent will provide wandb.config for sweep values)
@@ -299,27 +240,10 @@ def main():
         print(f"Warning: Could not get wandb.config: {e}")
         cfg_override = {}
     
-    # Start with defaults, then override from wandb.config (sweep) or command line args
+    # Start with defaults, then override from wandb.config (sweep)
     config = get_default_config()
     for k, v in cfg_override.items():
         config[k] = v
-    
-    # Parse command line arguments (override both defaults and sweep config)
-    # Only parse args if not running in sweep mode (when run is None, it's standalone)
-    # When running as sweep, WandB passes params as CLI args, but we get them from wandb.config instead
-    if run is None:
-        # Standalone run - parse command line args
-        args = parse_args()
-        update_config_from_args(config, args)
-    else:
-        # Sweep run - WandB passes params as CLI args, but we ignore them
-        # and use wandb.config instead (already merged above)
-        # Use parse_known_args to avoid errors from unrecognized WandB arguments
-        try:
-            args, unknown = argparse.ArgumentParser().parse_known_args()
-            # Ignore unknown args - they're from WandB sweep and already in config
-        except:
-            pass
     
     # Validate required config keys
     required_keys = ['dataset', 'hidden_layers', 'output_size', 'num_epochs', 'batch_size', 'learning_rate']
