@@ -9,36 +9,22 @@ from typing import Optional
 
 
 def get_hpc_scratch_dir() -> Optional[str]:
-    """
-    Get the HPC scratch directory path from BLACKHOLE environment variable.
-    
-    Returns:
-        Path to scratch directory if BLACKHOLE is set, None otherwise
-    """
+    # Get the HPC scratch directory path from BLACKHOLE environment variable
+    # Returns: Path to scratch directory if BLACKHOLE is set, None otherwise
     return os.environ.get('BLACKHOLE', None)
 
 
 def is_on_hpc() -> bool:
-    """
-    Check if running on HPC by checking for BLACKHOLE environment variable.
-    
-    Returns:
-        True if BLACKHOLE is set, False otherwise
-    """
+    # Check if running on HPC by checking for BLACKHOLE environment variable
+    # Returns: True if BLACKHOLE is set, False otherwise
     return get_hpc_scratch_dir() is not None
 
 
 def get_data_dir(base_dir: Optional[str] = None) -> str:
-    """
-    Get the appropriate data directory path.
-    Uses HPC scratch if available, otherwise uses local data directory.
-    
-    Args:
-        base_dir: Base directory for project (defaults to project root)
-        
-    Returns:
-        Path to data directory
-    """
+    # Get the appropriate data directory path
+    # Uses HPC scratch if available, otherwise uses local data directory
+    # base_dir: Base directory for project (defaults to project root)
+    # Returns: Path to data directory
     if base_dir is None:
         # Get project root (assuming this file is in src/)
         base_dir = Path(__file__).parent.parent
@@ -52,16 +38,10 @@ def get_data_dir(base_dir: Optional[str] = None) -> str:
 
 
 def get_results_dir(base_dir: Optional[str] = None) -> str:
-    """
-    Get the appropriate results directory path.
-    Uses HPC scratch if available, otherwise uses local results directory.
-    
-    Args:
-        base_dir: Base directory for project (defaults to project root)
-        
-    Returns:
-        Path to results directory
-    """
+    # Get the appropriate results directory path
+    # Uses HPC scratch if available, otherwise uses local results directory
+    # base_dir: Base directory for project (defaults to project root)
+    # Returns: Path to results directory
     if base_dir is None:
         base_dir = Path(__file__).parent.parent
     
@@ -74,10 +54,8 @@ def get_results_dir(base_dir: Optional[str] = None) -> str:
 
 
 def setup_hpc_directories():
-    """
-    Create necessary directories on HPC scratch if running on HPC.
-    Creates: data/, results/models/, results/plots/, results/logs/
-    """
+    # Create necessary directories on HPC scratch if running on HPC
+    # Creates: data/, results/models/, results/plots/, results/logs/
     if not is_on_hpc():
         print("Not running on HPC. Skipping HPC directory setup.")
         return
@@ -100,14 +78,10 @@ def setup_hpc_directories():
 
 
 def sync_data_to_hpc(local_data_dir: str, hpc_data_dir: Optional[str] = None):
-    """
-    Sync local data directory to HPC scratch.
-    Uses rsync for efficient transfer (only transfers new/changed files).
-    
-    Args:
-        local_data_dir: Local data directory path
-        hpc_data_dir: HPC data directory path (defaults to $BLACKHOLE/data)
-    """
+    # Sync local data directory to HPC scratch
+    # Uses rsync for efficient transfer (only transfers new/changed files)
+    # local_data_dir: Local data directory path
+    # hpc_data_dir: HPC data directory path (defaults to $BLACKHOLE/data)
     if not is_on_hpc():
         print("Not running on HPC. Cannot sync data.")
         return
@@ -151,13 +125,9 @@ def sync_data_to_hpc(local_data_dir: str, hpc_data_dir: Optional[str] = None):
 
 def sync_results_from_hpc(hpc_results_dir: Optional[str] = None, 
                           local_results_dir: Optional[str] = None):
-    """
-    Sync results from HPC scratch back to local machine.
-    
-    Args:
-        hpc_results_dir: HPC results directory (defaults to $BLACKHOLE/results)
-        local_results_dir: Local results directory (defaults to ./results)
-    """
+    # Sync results from HPC scratch back to local machine
+    # hpc_results_dir: HPC results directory (defaults to $BLACKHOLE/results)
+    # local_results_dir: Local results directory (defaults to ./results)
     if not is_on_hpc():
         print("Not running on HPC. Cannot sync results.")
         return
@@ -186,7 +156,7 @@ def sync_results_from_hpc(hpc_results_dir: Optional[str] = None,
 
 
 def print_hpc_info():
-    """Print information about HPC setup."""
+    # Print information about HPC setup
     if is_on_hpc():
         scratch_dir = get_hpc_scratch_dir()
         print("=" * 60)

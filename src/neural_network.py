@@ -82,7 +82,7 @@ class NeuralNetwork:
     # ------------------------------------------------------------------
     # FORWARD
     # ------------------------------------------------------------------
-
+    
     def forward(self, X: np.ndarray) -> np.ndarray:
         # Forward pass with optional dropout during training
         # Dropout is applied to hidden layers only (not input or output)
@@ -118,7 +118,7 @@ class NeuralNetwork:
             layer.activation_cache['A'] = A
 
         return A
-
+    
     # ------------------------------------------------------------------
     # BACKWARD
     # ------------------------------------------------------------------
@@ -163,7 +163,7 @@ class NeuralNetwork:
 
         if y_pred is None:
             y_pred = self.forward(X)
-
+        
         loss_deriv_fn = get_loss_derivative(self.loss_function)
         dA = loss_deriv_fn(y_pred, y)
 
@@ -205,7 +205,7 @@ class NeuralNetwork:
     # ------------------------------------------------------------------
     # UPDATE
     # ------------------------------------------------------------------
-
+    
     def update_weights(self) -> None:
         # Update all weights and biases using the optimizer
         
@@ -230,7 +230,7 @@ class NeuralNetwork:
     # ------------------------------------------------------------------
     # COMPUTE LOSS
     # ------------------------------------------------------------------
-
+    
     def compute_loss(self, y_pred: np.ndarray, y_true: np.ndarray) -> float:
         # Compute total loss: data loss + L2 regularization
         # y_pred: predictions, y_true: true labels -> returns: scalar loss
@@ -253,7 +253,7 @@ class NeuralNetwork:
     # ------------------------------------------------------------------
     # TRAINING STEP
     # ------------------------------------------------------------------
-
+    
     def train_step(self, X_batch: np.ndarray, y_batch: np.ndarray) -> float:
         # One complete training step: forward -> backward -> update
         # Returns loss value for this batch
@@ -279,7 +279,7 @@ class NeuralNetwork:
     # ------------------------------------------------------------------
     # PREDICT
     # ------------------------------------------------------------------
-
+    
     def predict(self, X: np.ndarray) -> np.ndarray:
         # Predict class labels: get probabilities and return argmax
         # X: (batch_size, input_size) -> returns: (batch_size,) class indices
@@ -297,18 +297,18 @@ class NeuralNetwork:
         return probabilities
     
     def train(self):
-        """Set model to training mode (enables dropout)."""
+        # Set model to training mode (enables dropout)
         self.training = True
     
     def eval(self):
-        """Set model to evaluation mode (disables dropout)."""
+        # Set model to evaluation mode (disables dropout)
         self.training = False
     
     
     # ------------------------------------------------------------------
     # PARAMETERS
     # ------------------------------------------------------------------
-
+    
     def get_params(self) -> dict:
         # Get all model parameters (weights and biases) as dictionary
         # Returns: {'W1': weights, 'b1': biases, 'W2': ..., ...}
