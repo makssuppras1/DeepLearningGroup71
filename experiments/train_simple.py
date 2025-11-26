@@ -119,17 +119,15 @@ def get_default_config():
     }
 
 
-def train(config=None):
+def train(config):
     # Main training function. Compatible with WandB sweeps.
-    # If config is None, uses wandb.config (for sweeps). Otherwise uses provided config dict.
+    # Config should be a dict. WandB run should be initialized before calling this.
     
-    # Handle WandB sweep mode (config comes from wandb.init())
-    if config is None:
-        wandb.init()
-        config = dict(wandb.config)
-        use_wandb = True
-    else:
-        use_wandb = init_wandb(config)
+    # Get the wandb run object if it exists
+    try:
+        run = wandb.run if wandb.run is not None else None
+    except Exception:
+        run = None
     
     # Setup
     set_random_seed(config.get('random_seed', 42))
@@ -182,24 +180,21 @@ def train(config=None):
             best_model_params = model.get_params()
         
         # Log metrics to WandB
-        if use_wandb:
-            try:
-                wandb.log({
-                    'epoch': epoch,
-                    'train_loss': train_loss,
-                    'val_loss': val_loss,
-                    'train_acc': train_acc,
-                    'val_acc': val_acc
-                })
-            except Exception as e:
-                print(f"Warning: Failed to log metrics: {e}")
+        if run is not None:
+            run.log({
+                'epoch': epoch,
+                'train_loss': train_loss,
+                'val_loss': val_loss,
+                'train_acc': train_acc,
+                'val_acc': val_acc
+            })
     
     # Evaluate best model on test set
     model.set_params(best_model_params)
     test_loss, test_acc = evaluate(model, X_test, y_test)
     
-    if use_wandb:
-        wandb.log({'test_loss': test_loss, 'test_acc': test_acc})
+    if run is not None:
+        run.log({'test_loss': test_loss, 'test_acc': test_acc})
     
     # Save model
     results_dir = get_results_dir(project_root)
@@ -211,8 +206,12 @@ def train(config=None):
     with open(model_path, 'wb') as f:
         pickle.dump(best_model_params, f)
     
-    if use_wandb:
-        wandb.finish()
+    if run is not None:
+        try:
+            run.finish()
+            print(f"✅ WandB run completed. View at: {run.url}")
+        except Exception:
+            pass
 
 
 def parse_args():
@@ -250,35 +249,39 @@ def update_config_from_args(config, args):
 
 
 def main():
-    # Main function for standalone runs
+    # Main function - works for both standalone runs and WandB sweeps
+    # Initialize wandb run (wandb.agent will provide wandb.config for sweep values)
+    try:
+        default_config = get_default_config()
+        run = wandb.init(
+            project=default_config.get('project_name', 'neural-network-numpy'),
+            config=default_config,
+            resume='allow'
+        )
+    except Exception:
+        # If wandb fails to initialize, still allow local runs
+        run = None
+    
+    # Get overrides from wandb.config (for sweeps) or use defaults
+    try:
+        cfg_override = dict(wandb.config) if run is not None else {}
+    except Exception:
+        cfg_override = {}
+    
+    # Start with defaults, then override from wandb.config (sweep) or command line args
     config = get_default_config()
+    for k, v in cfg_override.items():
+        config[k] = v
+    
+    # Parse command line arguments (override both defaults and sweep config)
     args = parse_args()
     update_config_from_args(config, args)
+    
     train(config)
 
 
 if __name__ == '__main__':
-    # Check if running as WandB sweep agent (program mode)
-    import os
-    import sys
-    
-    # When WandB runs a program for sweeps, it typically:
-    # 1. Sets WANDB_SWEEP_ID environment variable, OR
-    # 2. Calls the program and expects wandb.init() to get config from sweep
-    # 
-    # If no command line arguments (or just --wandb flag), likely a sweep run
-    # If wandb.run is already initialized, we're in a sweep
-    is_sweep_run = (
-        os.environ.get('WANDB_SWEEP_ID') or 
-        os.environ.get('WANDB_PROJECT') or
-        (len(sys.argv) == 1) or  # No args = likely sweep
-        wandb.run is not None     # Already initialized
-    )
-    
-    if is_sweep_run:
-        # Running as sweep agent - call train() without config
-        # train() will call wandb.init() which gets config from sweep
-        train()
-    else:
-        # Normal standalone run - use main()
-        main()
+    # Always call main() - it handles both sweep mode and standalone runs
+    # When run by wandb agent, wandb.init() in main() will get config from sweep
+    # When run standalone, wandb.init() uses default config
+    main()
