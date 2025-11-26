@@ -1,11 +1,11 @@
 program: experiments/train_simple.py
-method: bayes  # Changed from grid to bayes for smarter search
+method: bayes  # Bayesian optimization for efficient search
 project: neural-network-numpy
-name: HPC_sweep_refined
+name: HPC_sweep_tuned_v2
 
 early_terminate:
   type: hyperband
-  min_iter: 5  # Increased from 2 to give runs more time
+  min_iter: 10  # Increased to allow runs to develop (best runs need 67-113 epochs)
 
 metric:
   name: val_loss
@@ -13,40 +13,40 @@ metric:
 
 parameters:
   optimizer:
-    values: [adam, sgd, momentum]  # Removed rmsprop, focus on top performers
+    values: [sgd]
   hidden_layers:
     values:
-      - [128, 64]      # Best performer from current runs
-      - [256, 128]     # Slightly larger, test if helps
-      - [128, 64, 32]  # 3-layer variant
-      - [256, 128, 64] # Larger 3-layer
+      - [256]           # Single layer - Run 101: 0.809 val_acc at epoch 113!
+      - [128, 64]       # Proven - Run 102: 0.666 val_acc at epoch 86
+      - [256, 128]      # Run 103: 0.705 val_acc at epoch 67
+      - [512, 256]      # Run 104: 0.654 val_acc at epoch 27 (still improving)
   l2_lambda:
     distribution: uniform
-    min: 0.01   # Increased min (was 0.00001) - both runs used 0.018-0.038
-    max: 0.05   # Increased max (was 0.01) - run 2 used 0.038
+    min: 0.002  # Best runs use 0.0026-0.0042 (much lower than initial 0.01-0.05)
+    max: 0.005  # Focused range based on successful runs
   learning_rate:
     distribution: uniform
-    min: 0.001  # Narrowed from 0.0001 - both runs used 0.0048-0.0084
-    max: 0.01   # Narrowed from 0.1 - focus on sweet spot
+    min: 0.0025  # Sweet spot - best runs use 0.0026-0.0049
+    max: 0.005   # Narrowed from 0.01 based on data
   batch_size:
     distribution: q_log_uniform_values
-    q: 16       # Smaller increments (was 64)
-    min: 32     # Lowered from 64 - both runs used 40-80
-    max: 128    # Lowered from 256 - smaller batches seem better
+    q: 8        # Fine-grained increments
+    min: 24     # Best runs: 24, 32, 56, 80
+    max: 80     # Upper bound from successful runs
   activation:
-    values: [relu, tanh, elu]  # Removed sigmoid, keep tanh (both runs used it)
+    values: [tanh]  # Fixed - ALL top runs (0.65-0.81 val_acc) use tanh
   output_activation:
-    value: softmax  # Fixed to softmax (both runs used it)
+    value: softmax
   num_epochs:
     distribution: int_uniform
-    min: 150    # Increased min (was 100) - both runs needed 170-194
-    max: 200    # Keep max
+    min: 150    # Best runs need 150-194 epochs to converge
+    max: 200
   weight_init:
-    values: [xavier, he]  # Removed random, both runs used xavier/he
+    values: [xavier]  # Fixed - all best runs use xavier initialization
   dropout_rate:
     distribution: uniform
-    min: 0.1    # Keep min
-    max: 0.3    # Lowered max from 0.5 - both runs used 0.064-0.168, focus on lower range
+    min: 0.05   # Best runs use 0.059-0.129 (lower than expected)
+    max: 0.15   # Focused on lower range that works
   dataset:
     value: cifar10
   output_size:
