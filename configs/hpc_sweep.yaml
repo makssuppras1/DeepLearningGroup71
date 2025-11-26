@@ -1,11 +1,11 @@
 program: experiments/train_simple.py
-method: grid
+method: bayes  # Changed from grid to bayes for smarter search
 project: neural-network-numpy
-name: HPC_sweep
+name: HPC_sweep_refined
 
 early_terminate:
   type: hyperband
-  min_iter: 2
+  min_iter: 5  # Increased from 2 to give runs more time
 
 metric:
   name: val_loss
@@ -13,41 +13,40 @@ metric:
 
 parameters:
   optimizer:
-    values: [adam, sgd, momentum, rmsprop]
+    values: [adam, sgd, momentum]  # Removed rmsprop, focus on top performers
   hidden_layers:
     values:
-      - [128, 64]
-      - [256, 128]
-      - [512, 256]
-      - [128, 64, 32]
-      - [256, 128, 64]
+      - [128, 64]      # Best performer from current runs
+      - [256, 128]     # Slightly larger, test if helps
+      - [128, 64, 32]  # 3-layer variant
+      - [256, 128, 64] # Larger 3-layer
   l2_lambda:
     distribution: uniform
-    min: 0.00001
-    max: 0.01
+    min: 0.01   # Increased min (was 0.00001) - both runs used 0.018-0.038
+    max: 0.05   # Increased max (was 0.01) - run 2 used 0.038
   learning_rate:
     distribution: uniform
-    min: 0.0001
-    max: 0.1
+    min: 0.001  # Narrowed from 0.0001 - both runs used 0.0048-0.0084
+    max: 0.01   # Narrowed from 0.1 - focus on sweet spot
   batch_size:
     distribution: q_log_uniform_values
-    q: 64
-    min: 64
-    max: 256
+    q: 16       # Smaller increments (was 64)
+    min: 32     # Lowered from 64 - both runs used 40-80
+    max: 128    # Lowered from 256 - smaller batches seem better
   activation:
-    values: [relu, sigmoid, tanh, elu]
+    values: [relu, tanh, elu]  # Removed sigmoid, keep tanh (both runs used it)
   output_activation:
-    value: [softmax, sigmoid]
+    value: softmax  # Fixed to softmax (both runs used it)
   num_epochs:
     distribution: int_uniform
-    min: 100
-    max: 200
+    min: 150    # Increased min (was 100) - both runs needed 170-194
+    max: 200    # Keep max
   weight_init:
-    values: [random, xavier, he]
+    values: [xavier, he]  # Removed random, both runs used xavier/he
   dropout_rate:
     distribution: uniform
-    min: 0.1
-    max: 0.5
+    min: 0.1    # Keep min
+    max: 0.3    # Lowered max from 0.5 - both runs used 0.064-0.168, focus on lower range
   dataset:
     value: cifar10
   output_size:
