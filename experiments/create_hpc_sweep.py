@@ -19,7 +19,7 @@ sweep_config = {
     'method': 'bayes',
     'project': 'neural-network-numpy',
     'name': 'HPC_sweep',
-    # 'entity': 'makssuppras1-danmarks-tekniske-universitet-dtu',  # Commented out - use personal account
+
     'early_terminate': {
         'type': 'hyperband',
         'min_iter': 2
@@ -63,14 +63,28 @@ sweep_config = {
             'min': 8,
             'max': 128,
         },
+        'activation': {
+            'values': ['relu', 'sigmoid', 'tanh']
+        },
+        'output_activation': {
+            'value': 'softmax'  # Keep fixed - softmax is standard for multi-class
+        },
+        'num_epochs': {
+            'distribution': 'int_uniform',
+            'min': 100,
+            'max': 200
+        },
+        'weight_init': {
+            'values': ['random', 'xavier', 'he']
+        },
+        'dropout_rate': {
+            'distribution': 'uniform',
+            'min': 0.0,
+            'max': 0.5
+        },
         # Fixed parameters
         'dataset': {'value': 'cifar10'},
         'output_size': {'value': 10},
-        'activation': {'value': 'relu'},
-        'output_activation': {'value': 'softmax'},
-        'num_epochs': {'value': 150},
-        'weight_init': {'value': 'he'},
-        'dropout_rate': {'value': 0.0},
         'val_split': {'value': 0.2},
         'random_seed': {'value': 42},
         'use_wandb': {'value': True}
