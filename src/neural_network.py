@@ -184,12 +184,19 @@ class NeuralNetwork:
                 dZ = dA * activation_grad(Z)
 
             # Gradients (averaged over batch)
-            layer.dW = (A_prev.T @ dZ) / m
-            layer.db = np.sum(dZ, axis=0, keepdims=True) / m
+            # The loss derivative already returns averaged gradients (divided by batch size),
+            # so dZ is already averaged. When we compute dW = A_prev.T @ dZ, we get
+            # the sum over batch of averaged gradients, which equals the average gradient.
+            # So we don't need to divide by m again - dZ is already (y_pred - y_true) / m
+            layer.dW = A_prev.T @ dZ
+            layer.db = np.sum(dZ, axis=0, keepdims=True)
             if layer.b.shape != layer.db.shape:
                 layer.db = layer.db.reshape(layer.b.shape)
 
-            # L2 regularization (scale consistent with averaging)
+            # L2 regularization
+            # The loss includes L2 term: (lambda/2) * sum(W^2), so gradient is lambda * W
+            # Since gradients are averaged, we need lambda * W (not lambda * W / m)
+            # But we want the gradient of the averaged L2 term, which is (lambda/m) * W
             if self.l2_lambda > 0:
                 layer.dW += (self.l2_lambda / m) * layer.W
 
