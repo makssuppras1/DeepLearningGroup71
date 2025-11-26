@@ -16,9 +16,10 @@ parameters:
     values: [adam, sgd, momentum, rmsprop]
   hidden_layers:
     values:
-      - [128, 64]
-      - [256, 128]
-      - [512, 256]
+      - [128, 64, 32]
+      - [256, 128, 64]
+      - [512, 256, 128]
+      - [1024, 512, 256]
   l2_lambda:
     distribution: uniform
     min: 0.00001
