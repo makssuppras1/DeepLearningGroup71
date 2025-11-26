@@ -52,19 +52,50 @@ def download_cifar10(data_dir: str = './data') -> None:
     url = "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
     tar_path = os.path.join(data_dir, "cifar-10-python.tar.gz")
     
-    print("Downloading CIFAR-10 dataset (this may take a while)...")
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
-    
-    with open(tar_path, "wb") as f:
-        f.write(response.content)
-    print("Downloaded CIFAR-10")
+    # Check if tar file already exists
+    if os.path.exists(tar_path):
+        print("CIFAR-10 tar file already exists, extracting...")
+    else:
+        print("Downloading CIFAR-10 dataset (this may take a while)...")
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        
+        # Stream download in chunks to avoid memory issues
+        total_size = int(response.headers.get('content-length', 0))
+        downloaded = 0
+        chunk_size = 8192  # 8KB chunks
+        
+        with open(tar_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=chunk_size):
+                if chunk:
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if total_size > 0:
+                        percent = (downloaded / total_size) * 100
+                        print(f"\rDownloaded: {downloaded / (1024*1024):.1f} MB / {total_size / (1024*1024):.1f} MB ({percent:.1f}%)", end='', flush=True)
+        
+        print(f"\nDownloaded CIFAR-10 to {tar_path}")
+        
+        # Verify file exists and has content
+        if not os.path.exists(tar_path):
+            raise FileNotFoundError(f"Download failed: {tar_path} does not exist")
+        file_size = os.path.getsize(tar_path)
+        if file_size == 0:
+            raise ValueError(f"Download failed: {tar_path} is empty")
+        print(f"File size: {file_size / (1024*1024):.1f} MB")
     
     # Extract the dataset
     print("Extracting CIFAR-10...")
+    if not os.path.exists(tar_path):
+        raise FileNotFoundError(f"Cannot extract: {tar_path} does not exist")
+    
     with tarfile.open(tar_path, "r:gz") as tar:
         tar.extractall(path=data_dir)
     print("Extracted CIFAR-10")
+    
+    # Verify extraction succeeded
+    if not os.path.exists(extracted_dir):
+        raise FileNotFoundError(f"Extraction failed: {extracted_dir} does not exist")
     
     # Remove the tar file to save space
     os.remove(tar_path)
