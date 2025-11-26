@@ -125,6 +125,8 @@ wandb login
 ```
 
 ### Running Experiments
+
+**Local Machine:**
 ```bash
 # Train a model with default configuration
 python experiments/train.py
@@ -132,6 +134,23 @@ python experiments/train.py
 # Run a hyperparameter sweep
 wandb sweep experiments/sweep_config.py
 wandb agent <sweep_id>
+```
+
+**HPC (High Performance Computing):**
+For faster training and parallel experiments, see [HPC_SETUP.md](HPC_SETUP.md) for detailed instructions.
+
+Quick start on HPC:
+```bash
+# Connect to HPC
+ssh <username>@hpc.dtu.dk
+cd $BLACKHOLE
+
+# Clone project and sync data
+git clone <your-repo-url> DeepLearningGroup71
+cd DeepLearningGroup71
+
+# Submit training job
+sbatch scripts/submit_job.sh
 ```
 
 ## Development Workflow

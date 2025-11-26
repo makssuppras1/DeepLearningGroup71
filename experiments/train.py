@@ -10,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.neural_network import NeuralNetwork
 from src.data_loader import load_fashion_mnist, load_cifar10, preprocess_data, create_mini_batches, train_val_split
 from src.utils import accuracy_score, plot_training_curves, set_random_seed
+from src.hpc_utils import get_data_dir, get_results_dir, setup_hpc_directories, print_hpc_info
 import wandb
 from tqdm import tqdm
 
@@ -101,8 +102,15 @@ def train(config):
     # Set random seed
     set_random_seed(config['random_seed'])
     
-    # Load dataset
-    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    # Setup HPC directories if on HPC
+    setup_hpc_directories()
+    
+    # Print HPC info if on HPC
+    if config.get('show_hpc_info', False):
+        print_hpc_info()
+    
+    # Load dataset - use HPC data directory if available
+    data_dir = get_data_dir(os.path.dirname(os.path.dirname(__file__)))
     if config['dataset'] == 'fashion_mnist':
         X_train_full, y_train_full, X_test, y_test = load_fashion_mnist(data_dir)
         input_size = 784  # 28*28
@@ -219,9 +227,11 @@ def train(config):
             'test_acc': test_acc
         })
     
-    # Save model
-    os.makedirs('results/models', exist_ok=True)
-    model_path = f"results/models/{config['experiment_name']}_best.pkl"
+    # Save model - use HPC results directory if available
+    results_dir = get_results_dir(os.path.dirname(os.path.dirname(__file__)))
+    models_dir = os.path.join(results_dir, 'models')
+    os.makedirs(models_dir, exist_ok=True)
+    model_path = os.path.join(models_dir, f"{config['experiment_name']}_best.pkl")
     import pickle
     with open(model_path, 'wb') as f:
         pickle.dump(best_model_params, f)

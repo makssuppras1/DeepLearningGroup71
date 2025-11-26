@@ -11,7 +11,7 @@ import wandb
 sweep_config_random = {
     'method': 'random',  # Random search
     'metric': {
-        'name': 'val_accuracy',
+        'name': 'val_acc',  # Must match the metric name logged in training scripts
         'goal': 'maximize'
     },
     'parameters': {
@@ -47,6 +47,9 @@ sweep_config_random = {
             'distribution': 'log_uniform_values',
             'min': 0.00001,
             'max': 0.01
+        },
+        'dropout_rate': {
+            'values': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]  # Dropout regularization
         }
     }
 }
@@ -56,7 +59,7 @@ sweep_config_random = {
 sweep_config_bayes = {
     'method': 'bayes',  # Bayesian optimization
     'metric': {
-        'name': 'val_accuracy',
+        'name': 'val_acc',  # Must match the metric name logged in training scripts
         'goal': 'maximize'
     },
     'parameters': {
@@ -82,6 +85,9 @@ sweep_config_bayes = {
             'distribution': 'log_uniform_values',
             'min': 0.00001,
             'max': 0.01
+        },
+        'dropout_rate': {
+            'values': [0.0, 0.2, 0.3, 0.4]  # Dropout regularization (focused range for Bayesian)
         }
     }
 }
@@ -91,7 +97,7 @@ sweep_config_bayes = {
 sweep_config_activations = {
     'method': 'grid',  # Grid search
     'metric': {
-        'name': 'val_accuracy',
+        'name': 'val_acc',  # Must match the metric name logged in training scripts
         'goal': 'maximize'
     },
     'parameters': {
@@ -109,6 +115,9 @@ sweep_config_activations = {
         },
         'batch_size': {
             'value': 64
+        },
+        'dropout_rate': {
+            'value': 0.0  # Fixed value for activation function comparison
         }
     }
 }
