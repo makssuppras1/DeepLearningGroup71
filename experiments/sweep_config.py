@@ -5,6 +5,8 @@ This file defines sweep configurations for different experiments.
 """
 
 import wandb
+import os
+import sys
 
 
 # Sweep configuration for random search
@@ -15,6 +17,15 @@ sweep_config_random = {
         'goal': 'maximize'
     },
     'parameters': {
+        # Fixed parameters (required by train.py)
+        'dataset': {'value': 'cifar10'},  # Focus on CIFAR-10
+        'output_size': {'value': 10},
+        'output_activation': {'value': 'softmax'},
+        'num_epochs': {'value': 150},  # More epochs for CIFAR-10
+        'val_split': {'value': 0.2},
+        'random_seed': {'value': 42},
+        
+        # Swept parameters
         'learning_rate': {
             'distribution': 'log_uniform_values',
             'min': 0.0001,
@@ -28,13 +39,13 @@ sweep_config_random = {
         },
         'hidden_layers': {
             'values': [
-                [64],
-                [128],
                 [256],
-                [128, 64],
-                [256, 128],
+                [512],
+                [1024],
                 [512, 256],
-                [128, 64, 32]
+                [1024, 512],
+                [1024, 512, 256],
+                [512, 256, 128]
             ]
         },
         'activation': {
@@ -63,6 +74,17 @@ sweep_config_bayes = {
         'goal': 'maximize'
     },
     'parameters': {
+        # Fixed parameters (required by train.py)
+        'dataset': {'value': 'cifar10'},  # Focus on CIFAR-10
+        'output_size': {'value': 10},
+        'output_activation': {'value': 'softmax'},
+        'num_epochs': {'value': 150},  # More epochs for CIFAR-10
+        'val_split': {'value': 0.2},
+        'random_seed': {'value': 42},
+        'activation': {'value': 'relu'},
+        'weight_init': {'value': 'he'},
+        
+        # Swept parameters
         'learning_rate': {
             'distribution': 'log_uniform_values',
             'min': 0.0001,
@@ -76,9 +98,9 @@ sweep_config_bayes = {
         },
         'hidden_layers': {
             'values': [
-                [128, 64],
-                [256, 128],
-                [256, 128, 64]
+                [512, 256],
+                [1024, 512],
+                [1024, 512, 256]
             ]
         },
         'l2_lambda': {
@@ -101,6 +123,15 @@ sweep_config_activations = {
         'goal': 'maximize'
     },
     'parameters': {
+        # Fixed parameters (required by train.py)
+        'dataset': {'value': 'cifar10'},  # Focus on CIFAR-10
+        'output_size': {'value': 10},
+        'output_activation': {'value': 'softmax'},
+        'num_epochs': {'value': 150},  # More epochs for CIFAR-10
+        'val_split': {'value': 0.2},
+        'random_seed': {'value': 42},
+        
+        # Swept parameters
         'activation': {
             'values': ['relu', 'sigmoid', 'tanh']
         },
@@ -115,6 +146,12 @@ sweep_config_activations = {
         },
         'batch_size': {
             'value': 64
+        },
+        'hidden_layers': {
+            'value': [1024, 512]  # Larger network for CIFAR-10
+        },
+        'l2_lambda': {
+            'value': 0.0001
         },
         'dropout_rate': {
             'value': 0.0  # Fixed value for activation function comparison
@@ -164,9 +201,36 @@ if __name__ == '__main__':
     2. Run agent:
        wandb agent <sweep_id>
     """
+    import sys
     
-    # TODO: Add command line interface to create sweeps
-    print("Sweep configurations defined.")
-    print("To create a sweep, use wandb.sweep() in your training script")
-    print("Or modify this file to create sweeps directly")
+    # Import train function
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from experiments.train import train
+    
+    # Example: Create and run a sweep
+    if len(sys.argv) > 1:
+        config_name = sys.argv[1]
+        if config_name == 'random':
+            sweep_config = sweep_config_random
+        elif config_name == 'bayes':
+            sweep_config = sweep_config_bayes
+        elif config_name == 'activations':
+            sweep_config = sweep_config_activations
+        else:
+            print(f"Unknown config: {config_name}")
+            print("Available: random, bayes, activations")
+            sys.exit(1)
+        
+        project_name = sys.argv[2] if len(sys.argv) > 2 else 'neural-network-numpy'
+        sweep_id = create_sweep(sweep_config, project_name)
+        print(f"Created sweep: {sweep_id}")
+        print(f"Run with: wandb agent {sweep_id}")
+    else:
+        print("Sweep configurations defined.")
+        print("\nUsage:")
+        print("  python sweep_config.py <config_name> [project_name]")
+        print("\nConfigs: random, bayes, activations")
+        print("\nExample:")
+        print("  python sweep_config.py random")
+        print("  wandb agent <sweep_id>")
 
