@@ -104,7 +104,18 @@ if __name__ == '__main__':
         print(f"Error details: {e}")
         sys.exit(1)
     
-    print("Creating WandB sweep...")
+    # Check WandB status
+    try:
+        import subprocess
+        result = subprocess.run(['wandb', 'status'], capture_output=True, text=True)
+        print("WandB Status:")
+        print(result.stdout)
+        if result.stderr:
+            print("Warnings:", result.stderr)
+    except:
+        pass
+    
+    print("\nCreating WandB sweep...")
     print(f"Project: {sweep_config['project']}")
     if 'entity' in sweep_config:
         print(f"Entity: {sweep_config['entity']}")
@@ -113,8 +124,25 @@ if __name__ == '__main__':
     print(f"Method: {sweep_config['method']}")
     print("")
     
+    # Try to initialize wandb first to ensure project exists
+    try:
+        test_run = wandb.init(project=sweep_config['project'], mode='disabled')
+        wandb.finish()
+    except Exception as e:
+        print(f"Warning: Could not verify project access: {e}")
+        print("Continuing anyway...")
+    
     # Create sweep
-    sweep_id = wandb.sweep(sweep_config)
+    try:
+        sweep_id = wandb.sweep(sweep_config)
+    except Exception as e:
+        print(f"\nERROR creating sweep: {e}")
+        print("\nTroubleshooting steps:")
+        print("1. Verify WandB login: wandb login")
+        print("2. Check WandB status: wandb status")
+        print("3. Try creating the project first via WandB web interface")
+        print("4. Ensure your WandB account has sweep permissions")
+        sys.exit(1)
     
     print("=" * 60)
     print(f"✅ Sweep created successfully!")
