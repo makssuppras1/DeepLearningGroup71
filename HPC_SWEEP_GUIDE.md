@@ -156,7 +156,28 @@ pkill -f "wandb agent"
 ps aux | grep "wandb agent" | grep -v grep
 ```
 
-## 9. Common Issues & Solutions
+## 9. Diagnosing Crashes
+
+### Quick Diagnosis Commands
+
+```bash
+# Check which agents are still running
+ps aux | grep "wandb agent" | grep -v grep
+
+# Check exit status of crashed agents
+tail -50 sweep_agent_*.log | grep -A 10 "Traceback\|Error\|Exception"
+
+# Find common errors across all logs
+grep -i "error\|exception\|traceback\|fatal" sweep_agent_*.log | head -20
+
+# Check the most recent errors
+for i in {1..5}; do
+  echo "=== Agent $i ==="
+  tail -30 sweep_agent_${i}.log | tail -10
+done
+```
+
+### Common Issues & Solutions
 
 ### Issue: "unrecognized arguments" error
 **Solution:** Make sure you've synced the latest `train_simple.py` (should not have argparse).
@@ -177,18 +198,86 @@ wandb login --relogin
 - `WANDB_ENTITY` matches your WandB username (or unset it to use default)
 - Sweep ID is correct
 
-### Issue: Agents exit immediately
+### Issue: Agents exit immediately or crash
 **Solution:** Check logs:
 ```bash
+# View full error from a crashed agent
 cat sweep_agent_1.log
+
+# Find the error pattern
+grep -B 5 -A 10 "Traceback" sweep_agent_1.log
 ```
+
 Common causes:
-- Missing data (will auto-download)
-- Import errors (check Python path)
-- Config errors (check sweep YAML)
+- Missing data (will auto-download, but may fail)
+- Import errors (check Python path: `python -c "import sys; print(sys.path)"`)
+- Config errors (check sweep YAML syntax)
+- Memory issues (check available memory: `free -h`)
+- Network issues (check internet: `ping -c 3 8.8.8.8`)
+
+### Issue: Training is very slow (20+ minutes per epoch)
+**Possible causes:**
+1. **Running on CPU instead of GPU** - Check if GPU is available:
+   ```bash
+   nvidia-smi  # Check GPU availability
+   # Or check CPU usage
+   top -u $USER
+   ```
+
+2. **Too many agents competing for resources**
+   - **Solution:** Reduce number of parallel agents (try 2-3 instead of 5)
+   - **Solution:** Check system load: `uptime` or `htop`
+
+3. **Large batch size or model size**
+   - **Solution:** Check sweep config - reduce `batch_size` or `hidden_layers` if too large
+
+4. **Network issues slowing WandB logging**
+   - **Solution:** Check network: `ping -c 3 8.8.8.8`
+
+### Issue: Multiple agents crashing simultaneously
+**Possible causes:**
+1. **Data download conflict** - Multiple agents trying to download/extract same file
+   - **Solution:** Let one agent finish downloading first, or pre-download data:
+   ```bash
+   cd $BLACKHOLE/DeepLearningGroup71
+   source deeplearning/bin/activate
+   python -c "from src.data_loader import download_cifar10; from src.hpc_utils import get_data_dir, get_project_root; download_cifar10(get_data_dir(get_project_root()))"
+   ```
+
+2. **WandB API rate limiting**
+   - **Solution:** Reduce number of parallel agents or add delays between starts
+
+3. **Resource exhaustion** (memory/CPU)
+   - **Solution:** Check system resources: `free -h`, `top`, reduce concurrent agents
+
+### Issue: KeyboardInterrupt in logs
+**Cause:** Agent was manually stopped (Ctrl+C) or killed
+**Solution:** This is normal if you stopped an agent. Restart it if needed:
+```bash
+# Restart a specific agent
+nohup wandb agent $SWEEP_PATH --count 10 > sweep_agent_5.log 2>&1 &
+```
+
+### Issue: Old log files with errors
+**Solution:** Clean up old log files:
+```bash
+# Remove old log files
+rm sweep_agent_n6xelg7m_*.log  # Replace with your old sweep ID
+# Or remove all old logs
+rm sweep_agent_*.log
+# Then restart agents (they'll create new logs)
+```
 
 ### Issue: "sbatch: command not found"
 **Solution:** DTU HPC doesn't use SLURM on login nodes. Use `nohup` instead (as shown above).
+
+### Issue: Import errors
+**Solution:** Verify Python path and imports:
+```bash
+cd $BLACKHOLE/DeepLearningGroup71
+source deeplearning/bin/activate
+python -c "import sys; sys.path.insert(0, '.'); from experiments.train_simple import main; print('Import OK')"
+```
 
 ## 10. Quick Reference
 
