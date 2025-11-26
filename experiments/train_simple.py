@@ -251,21 +251,28 @@ def update_config_from_args(config, args):
 def main():
     # Main function - works for both standalone runs and WandB sweeps
     # Initialize wandb run (wandb.agent will provide wandb.config for sweep values)
+    default_config = get_default_config()
+    
     try:
-        default_config = get_default_config()
         run = wandb.init(
             project=default_config.get('project_name', 'neural-network-numpy'),
             config=default_config,
             resume='allow'
         )
-    except Exception:
+    except Exception as e:
         # If wandb fails to initialize, still allow local runs
+        print(f"Warning: WandB init failed ({e}). Continuing without WandB.")
         run = None
     
     # Get overrides from wandb.config (for sweeps) or use defaults
     try:
-        cfg_override = dict(wandb.config) if run is not None else {}
-    except Exception:
+        if run is not None:
+            cfg_override = dict(wandb.config)
+            print(f"Got config from WandB sweep: {len(cfg_override)} parameters")
+        else:
+            cfg_override = {}
+    except Exception as e:
+        print(f"Warning: Could not get wandb.config: {e}")
         cfg_override = {}
     
     # Start with defaults, then override from wandb.config (sweep) or command line args
@@ -276,6 +283,12 @@ def main():
     # Parse command line arguments (override both defaults and sweep config)
     args = parse_args()
     update_config_from_args(config, args)
+    
+    # Validate required config keys
+    required_keys = ['dataset', 'hidden_layers', 'output_size', 'num_epochs', 'batch_size', 'learning_rate']
+    missing_keys = [k for k in required_keys if k not in config]
+    if missing_keys:
+        raise ValueError(f"Missing required config keys: {missing_keys}")
     
     train(config)
 
