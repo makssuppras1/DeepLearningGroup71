@@ -183,13 +183,16 @@ def train(config=None):
         
         # Log metrics to WandB
         if use_wandb:
-            wandb.log({
-                'epoch': epoch,
-                'train_loss': train_loss,
-                'val_loss': val_loss,
-                'train_acc': train_acc,
-                'val_acc': val_acc
-            })
+            try:
+                wandb.log({
+                    'epoch': epoch,
+                    'train_loss': train_loss,
+                    'val_loss': val_loss,
+                    'train_acc': train_acc,
+                    'val_acc': val_acc
+                })
+            except Exception as e:
+                print(f"Warning: Failed to log metrics: {e}")
     
     # Evaluate best model on test set
     model.set_params(best_model_params)
@@ -255,4 +258,27 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # Check if running as WandB sweep agent (program mode)
+    import os
+    import sys
+    
+    # When WandB runs a program for sweeps, it typically:
+    # 1. Sets WANDB_SWEEP_ID environment variable, OR
+    # 2. Calls the program and expects wandb.init() to get config from sweep
+    # 
+    # If no command line arguments (or just --wandb flag), likely a sweep run
+    # If wandb.run is already initialized, we're in a sweep
+    is_sweep_run = (
+        os.environ.get('WANDB_SWEEP_ID') or 
+        os.environ.get('WANDB_PROJECT') or
+        (len(sys.argv) == 1) or  # No args = likely sweep
+        wandb.run is not None     # Already initialized
+    )
+    
+    if is_sweep_run:
+        # Running as sweep agent - call train() without config
+        # train() will call wandb.init() which gets config from sweep
+        train()
+    else:
+        # Normal standalone run - use main()
+        main()
