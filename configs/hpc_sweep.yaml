@@ -1,0 +1,67 @@
+program: experiments/train_simple.py
+method: bayes
+project: neural-network-numpy
+name: HPC_sweep
+
+early_terminate:
+  type: hyperband
+  min_iter: 2
+
+metric:
+  name: val_acc
+  goal: maximize
+
+parameters:
+  optimizer:
+    values: [adam, sgd]
+  hidden_layers:
+    values:
+      - [32]
+      - [64]
+      - [128]
+      - [256]
+      - [128, 64]
+      - [256, 128]
+      - [512, 256]
+      - [128, 64, 32]
+      - [1024, 512, 256]
+      - [2048, 1024, 512]
+      - [4096, 2048, 1024]
+  l2_lambda:
+    distribution: uniform
+    min: 0.000001
+    max: 0.01
+  learning_rate:
+    distribution: uniform
+    min: 0.0000001
+    max: 0.1
+  batch_size:
+    distribution: q_log_uniform_values
+    q: 8
+    min: 8
+    max: 128
+  activation:
+    values: [relu, sigmoid, tanh]
+  output_activation:
+    value: softmax
+  num_epochs:
+    distribution: int_uniform
+    min: 100
+    max: 200
+  weight_init:
+    values: [random, xavier, he]
+  dropout_rate:
+    distribution: uniform
+    min: 0.0
+    max: 0.5
+  dataset:
+    value: cifar10
+  output_size:
+    value: 10
+  val_split:
+    value: 0.2
+  random_seed:
+    value: 42
+  use_wandb:
+    value: true
+
