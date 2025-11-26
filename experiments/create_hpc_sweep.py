@@ -79,8 +79,14 @@ sweep_config = {
 
 if __name__ == '__main__':
     # Check WandB login
-    if not wandb.api.api_key():
-        print("ERROR: WandB not logged in. Run 'wandb login' first.")
+    try:
+        api_key = wandb.api.api_key
+        if api_key is None:
+            print("ERROR: WandB not logged in. Run 'wandb login' first.")
+            sys.exit(1)
+    except Exception as e:
+        print(f"ERROR: WandB not logged in. Run 'wandb login' first.")
+        print(f"Error details: {e}")
         sys.exit(1)
     
     print("Creating WandB sweep...")
