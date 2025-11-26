@@ -13,12 +13,13 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 # Sweep configuration (from train3.ipynb)
+# Note: Remove 'entity' if using personal account, or use correct entity name
 sweep_config = {
     'program': 'experiments/train_simple.py',
     'method': 'bayes',
     'project': 'neural-network-numpy',
     'name': 'HPC_sweep',
-    'entity': 'makssuppras1-danmarks-tekniske-universitet-dtu',
+    # 'entity': 'makssuppras1-danmarks-tekniske-universitet-dtu',  # Commented out - use personal account
     'early_terminate': {
         'type': 'hyperband',
         'min_iter': 2
@@ -72,8 +73,8 @@ sweep_config = {
         'dropout_rate': {'value': 0.0},
         'val_split': {'value': 0.2},
         'random_seed': {'value': 42},
-        'use_wandb': {'value': True},
-        'entity': {'value': 'makssuppras1-danmarks-tekniske-universitet-dtu'}
+        'use_wandb': {'value': True}
+        # Note: entity will be set automatically based on your WandB login
     }
 }
 
@@ -91,7 +92,10 @@ if __name__ == '__main__':
     
     print("Creating WandB sweep...")
     print(f"Project: {sweep_config['project']}")
-    print(f"Entity: {sweep_config['entity']}")
+    if 'entity' in sweep_config:
+        print(f"Entity: {sweep_config['entity']}")
+    else:
+        print("Entity: (using default/personal account)")
     print(f"Method: {sweep_config['method']}")
     print("")
     
@@ -101,7 +105,8 @@ if __name__ == '__main__':
     print("=" * 60)
     print(f"✅ Sweep created successfully!")
     print(f"Sweep ID: {sweep_id}")
-    print(f"Sweep URL: https://wandb.ai/{sweep_config['entity']}/{sweep_config['project']}/sweeps/{sweep_id}")
+    entity_part = f"{sweep_config.get('entity', 'your-username')}/" if 'entity' in sweep_config else ""
+    print(f"Sweep URL: https://wandb.ai/{entity_part}{sweep_config['project']}/sweeps/{sweep_id}")
     print("=" * 60)
     print("")
     print("To run sweep agents on HPC:")
