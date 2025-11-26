@@ -73,8 +73,10 @@ if [ -n "$ENTITY" ]; then
     echo "Using WandB entity: $ENTITY"
 fi
 
-# Run sweep agent using the wrapper script
-python experiments/run_sweep_agent.py "$SWEEP_ID" "$COUNT"
+# Run sweep agent
+# For 'program' mode sweeps, WandB will execute the program specified in sweep config
+# For 'function' mode sweeps, use the wrapper script
+wandb agent "$SWEEP_ID" --count "$COUNT"
 
 echo ""
 echo "=========================================="

@@ -50,11 +50,20 @@ def cross_entropy_loss(y_pred: np.ndarray, y_true: np.ndarray) -> float:
     return float(loss)
 
 def cross_entropy_derivative(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
+    """
+    Compute derivative of cross-entropy loss with respect to logits (before softmax).
+    For softmax + cross-entropy, this simplifies to: (y_pred - y_true) / n
+    where y_pred is the softmax output and n is the batch size.
+    This returns averaged gradients, matching PyTorch's behavior.
+    """
     if y_pred.ndim == 1:
         y_pred = y_pred.reshape(1, -1)
         y_true = y_true.reshape(1, -1)
 
     n = y_pred.shape[0]
+    # Return averaged gradient: (y_pred - y_true) / n
+    # This matches PyTorch's behavior where loss.backward() computes gradients
+    # from the averaged loss, so gradients are automatically averaged
     return (y_pred - y_true) / n
 
 def binary_cross_entropy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
