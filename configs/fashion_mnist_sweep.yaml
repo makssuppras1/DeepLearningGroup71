@@ -27,7 +27,7 @@ parameters:
   output_activation:
     value: softmax
   num_epochs:
-    value: 100  # Grid search requires discrete values
+    value: 60  # Grid search requires discrete values
   weight_init:
     value: he  # Test different initializations
   dropout_rate:
