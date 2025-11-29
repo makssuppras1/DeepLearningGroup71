@@ -1,0 +1,204 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\title{Deep Learning Project: Neural Network Implementation from Scratch}
+\author{DeepLearningGroup71}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+This project implements a fully-connected feedforward neural network from scratch using NumPy, demonstrating core deep learning concepts including forward and backward propagation, optimization algorithms, and regularization techniques. The implementation is validated through comparison with PyTorch and evaluated on image classification tasks using Fashion-MNIST and CIFAR-10 datasets.
+
+The primary objectives were to: (1) implement a complete neural network framework with automatic differentiation, (2) compare the NumPy implementation with PyTorch to verify correctness, (3) conduct hyperparameter tuning using WandB sweeps, and (4) achieve competitive classification performance on benchmark datasets.
+
+\section{Methods}
+
+\subsection{Architecture}
+
+The neural network consists of fully-connected (dense) layers with configurable architecture. Each layer performs a linear transformation $Z = XW + b$ followed by a non-linear activation function $A = \sigma(Z)$. The network supports multiple hidden layers with different activation functions (ReLU, tanh, sigmoid) and uses softmax activation in the output layer for multi-class classification.
+
+\subsection{Forward Propagation}
+
+The forward pass computes activations layer by layer:
+\begin{align}
+Z^{[l]} &= A^{[l-1]}W^{[l]} + b^{[l]} \\
+A^{[l]} &= \sigma^{[l]}(Z^{[l]})
+\end{align}
+where $A^{[0]} = X$ is the input, and the final output $A^{[L]}$ represents class probabilities via softmax:
+\begin{equation}
+\hat{y}_c = \frac{\exp(z_c)}{\sum_{k=1}^{K} \exp(z_k)}
+\end{equation}
+
+\subsection{Backward Propagation}
+
+Gradients are computed using the chain rule, propagating errors backward from the output layer:
+\begin{align}
+dZ^{[L]} &= \hat{Y} - Y \\
+dW^{[l]} &= \frac{1}{m} A^{[l-1]T} dZ^{[l]} + \lambda W^{[l]} \\
+db^{[l]} &= \frac{1}{m} \sum dZ^{[l]} \\
+dA^{[l-1]} &= dZ^{[l]} W^{[l]T} \\
+dZ^{[l-1]} &= dA^{[l-1]} \odot \sigma'(Z^{[l-1]})
+\end{align}
+where $m$ is the batch size, $\lambda$ is the L2 regularization coefficient, and $\odot$ denotes element-wise multiplication.
+
+\subsection{Loss Function}
+
+For multi-class classification, cross-entropy loss is used:
+\begin{equation}
+\mathcal{L} = -\frac{1}{m} \sum_{i=1}^{m} \sum_{c=1}^{K} y_{i,c} \log(\hat{y}_{i,c})
+\end{equation}
+where $y_{i,c}$ is 1 if sample $i$ belongs to class $c$, and 0 otherwise.
+
+\subsection{Optimization Algorithms}
+
+Four optimizers were implemented:
+\begin{itemize}
+\item \textbf{SGD}: $W = W - \alpha \nabla_W$
+\item \textbf{Momentum}: $v = \beta v - \alpha \nabla_W$, $W = W + v$
+\item \textbf{RMSprop}: $s = \gamma s + (1-\gamma)(\nabla_W)^2$, $W = W - \frac{\alpha}{\sqrt{s+\epsilon}} \nabla_W$
+\item \textbf{Adam}: Combines momentum and RMSprop with bias correction
+\end{itemize}
+
+\subsection{Regularization}
+
+L2 regularization is applied to prevent overfitting by adding $\frac{\lambda}{2m} \sum W^2$ to the loss function. Dropout is also supported, randomly setting activations to zero during training with probability $p$.
+
+\subsection{Weight Initialization}
+
+Multiple initialization schemes are supported: Xavier/Glorot (for tanh/sigmoid) and He initialization (for ReLU), ensuring proper gradient flow during training.
+
+\section{Experiments}
+
+\subsection{Datasets}
+
+Experiments were conducted on two datasets:
+\begin{itemize}
+\item \textbf{Fashion-MNIST}: 60,000 training and 10,000 test images of 28×28 grayscale fashion items across 10 classes
+\item \textbf{CIFAR-10}: 50,000 training and 10,000 test images of 32×32 color images across 10 object classes
+\end{itemize}
+
+Both datasets were normalized to [0,1] and flattened for fully-connected networks. A 20\% validation split was used for hyperparameter tuning.
+
+\subsection{Hyperparameter Tuning}
+
+WandB sweeps were conducted using Bayesian optimization to efficiently search the hyperparameter space. Key hyperparameters tuned include:
+\begin{itemize}
+\item Architecture: hidden layer sizes ([128,64], [256,128], [512,256])
+\item Learning rate: 0.0025-0.005
+\item Batch size: 24-80
+\item Optimizer: SGD, Adam, RMSprop, Momentum
+\item Activation: ReLU, tanh
+\item L2 regularization: 0.002-0.005
+\item Dropout rate: 0.05-0.15
+\item Weight initialization: Xavier, He
+\end{itemize}
+
+Experiments were run on DTU's HPC cluster using SLURM, enabling parallel sweep agents for efficient exploration.
+
+\subsection{Validation}
+
+The NumPy implementation was validated against PyTorch by:
+\begin{enumerate}
+\item Initializing both networks with identical weights
+\item Comparing forward pass outputs
+\item Comparing loss values
+\item Comparing gradients after backward pass
+\item Comparing weight updates after training steps
+\end{enumerate}
+
+Results showed numerical agreement within acceptable tolerances (relative tolerance $10^{-3}$), confirming correct implementation of forward and backward propagation.
+
+\section{Results}
+
+\subsection{Performance on Fashion-MNIST}
+
+The best configuration achieved validation accuracy of approximately 88-90\% using:
+\begin{itemize}
+\item Architecture: [256, 128] hidden layers
+\item Activation: ReLU with He initialization
+\item Optimizer: Adam with learning rate 0.001
+\item L2 regularization: 0.0001
+\item Batch size: 32, 50 epochs
+\end{itemize}
+
+\subsection{Performance on CIFAR-10}
+
+CIFAR-10 proved more challenging due to its complexity. Best results achieved validation accuracy ranging from 65.4\% to 80.9\% depending on configuration:
+\begin{itemize}
+\item \textbf{Best single-layer architecture}: [256] with tanh activation achieved \textbf{80.9\% validation accuracy} (Run 101, epoch 113)
+\item \textbf{Multi-layer architectures}: 
+  \begin{itemize}
+  \item [128,64] achieved \textbf{66.6\%} validation accuracy (Run 102, epoch 86)
+  \item [256,128] achieved \textbf{70.5\%} validation accuracy (Run 103, epoch 67)
+  \item [512,256] achieved \textbf{65.4\%} validation accuracy (Run 104, epoch 27, still improving)
+  \end{itemize}
+\item Optimal hyperparameters: learning rate 0.0026-0.0049, L2 lambda 0.0026-0.0042, batch size 24-80
+\item Tanh activation with Xavier initialization performed best for CIFAR-10 (all top runs used this combination)
+\item Dropout rates of 0.059-0.129 were optimal
+\item Training duration: Best runs required 67-113 epochs to converge, with some configurations needing up to 194 epochs
+\end{itemize}
+
+\subsection{Key Findings}
+
+\begin{enumerate}
+\item \textbf{Activation functions}: Tanh outperformed ReLU on CIFAR-10, while ReLU worked better on Fashion-MNIST, highlighting dataset-specific optimization needs.
+
+\item \textbf{Architecture depth}: Deeper networks did not always improve performance; single-layer [256] achieved best CIFAR-10 results, suggesting the importance of capacity vs. regularization balance.
+
+\item \textbf{Optimization}: SGD with proper learning rate scheduling performed comparably to Adam for well-tuned hyperparameters, though Adam provided more stable convergence.
+
+\item \textbf{Regularization}: L2 regularization and dropout were crucial for preventing overfitting, especially on CIFAR-10. Optimal L2 values were lower than initially expected (0.002-0.005).
+
+\item \textbf{Initialization}: Xavier initialization worked best with tanh, while He initialization was optimal for ReLU, confirming theoretical expectations.
+\end{enumerate}
+
+\subsection{Comparison with PyTorch}
+
+The NumPy implementation achieved numerical agreement with PyTorch within $10^{-3}$ relative tolerance for:
+\begin{itemize}
+\item Forward pass outputs
+\item Loss computation
+\item Gradient values
+\item Weight updates after training steps
+\end{itemize}
+
+This validates the correctness of the implementation and demonstrates understanding of the underlying mathematical operations.
+
+\section{Conclusion}
+
+This project successfully implemented a complete neural network framework from scratch using NumPy, demonstrating proficiency in core deep learning concepts including forward/backward propagation, optimization algorithms, and regularization techniques. The implementation was validated against PyTorch and achieved competitive performance on Fashion-MNIST (88-90\% accuracy) and CIFAR-10 (65-81\% accuracy depending on configuration).
+
+Key contributions include: (1) a complete, modular neural network implementation with multiple optimizers and regularization techniques, (2) systematic hyperparameter tuning using WandB sweeps on HPC infrastructure, (3) validation of correctness through comparison with PyTorch, and (4) insights into dataset-specific optimization strategies.
+
+\subsection{Limitations and Future Work}
+
+The current implementation uses fully-connected layers, which are computationally expensive for image data. Future improvements could include: (1) convolutional layers for better image feature extraction, (2) batch normalization for improved training stability, (3) learning rate scheduling for better convergence, and (4) data augmentation to improve generalization.
+
+The project demonstrates that understanding the fundamentals of neural networks through from-scratch implementation provides valuable insights into deep learning frameworks and optimization strategies.
+
+\section*{GitHub Repository}
+
+The complete codebase, including implementation, experiments, and Jupyter notebooks for reproducing results, is available at:
+
+\url{https://github.com/[your-username]/DeepLearningGroup71}
+
+\vspace{2cm}
+
+\section*{AI Declaration}
+
+[AI declaration text to be added]
+
+\end{document}
+

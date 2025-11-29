@@ -1,0 +1,65 @@
+program: experiments/train_simple.py
+method: bayes  # Bayesian optimization for efficient search
+project: neural-network-numpy
+name: Fashion_MNIST_HPC_sweep
+
+early_terminate:
+  type: hyperband
+  min_iter: 10  # Allow runs to develop before early stopping
+
+metric:
+  name: val_loss
+  goal: minimize
+
+parameters:
+  optimizer:
+    values: [sgd, adam, momentum, rmsprop]  # Test different optimizers
+  hidden_layers:
+    values:
+      - [64]              # Simple single layer
+      - [128]             # Single layer, larger
+      - [256]             # Single layer, even larger
+      - [128, 64]         # Two layers
+      - [256, 128]        # Two layers, larger
+      - [512, 256]        # Two layers, very large
+      - [128, 64, 32]     # Three layers
+      - [256, 128, 64]    # Three layers, larger
+      - [512, 256, 128]   # Three layers, very large
+      - [1024, 512]       # Deep two-layer
+      - [1024, 512, 256]  # Deep three-layer
+  l2_lambda:
+    distribution: log_uniform_values
+    values: [0.00001, 0.0001, 0.001, 0.01, 0.1]  # Wide range for regularization
+  learning_rate:
+    distribution: log_uniform_values
+    values: [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05]  # Wide range
+  batch_size:
+    distribution: q_log_uniform_values
+    q: 8        # Fine-grained increments
+    min: 16     # Small batches
+    max: 256    # Large batches
+  activation:
+    values: [relu, tanh, sigmoid]  # Test different activations
+  output_activation:
+    value: softmax
+  num_epochs:
+    distribution: int_uniform
+    min: 50     # Minimum epochs
+    max: 150    # Maximum epochs
+  weight_init:
+    values: [xavier, he, random]  # Test different initializations
+  dropout_rate:
+    distribution: uniform
+    min: 0.0    # No dropout
+    max: 0.5    # High dropout
+  dataset:
+    value: fashion_mnist  # Fixed to Fashion-MNIST
+  output_size:
+    value: 10
+  val_split:
+    value: 0.2
+  random_seed:
+    value: 42
+  use_wandb:
+    value: true
+

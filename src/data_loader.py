@@ -56,16 +56,16 @@ def download_cifar10(data_dir: str = './data') -> None:
     if os.path.exists(tar_path):
         print("CIFAR-10 tar file already exists, extracting...")
     else:
-        print("Downloading CIFAR-10 dataset (this may take a while)...")
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
+    print("Downloading CIFAR-10 dataset (this may take a while)...")
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
         
         # Stream download in chunks to avoid memory issues
         total_size = int(response.headers.get('content-length', 0))
         downloaded = 0
         chunk_size = 8192  # 8KB chunks
-        
-        with open(tar_path, "wb") as f:
+    
+    with open(tar_path, "wb") as f:
             for chunk in response.iter_content(chunk_size=chunk_size):
                 if chunk:
                     f.write(chunk)
