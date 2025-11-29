@@ -1,0 +1,70 @@
+% Results Section - Matching your template style
+% Replace the Results section in your report.tex with this content
+
+\section{Results}
+\label{sec:majhead}
+
+\begin{itemize}
+    \item \textbf{Fashion-MNIST}
+    
+    Concluding on our results on the Fashion-MNIST dataset, we end up with a test accuracy of approximately 88-90\%, which is typical for a fully connected model. Our best performing architecture was [256, 128] hidden layers with ReLU as our activation function and He initialization for weight initialization. The optimal configuration utilized Adam optimizer with a learning rate of 0.001, L2 regularization of 0.0001, batch size of 32, and trained for 50 epochs.
+    
+    Training on Fashion-MNIST showed stable convergence with ReLU activation consistently outperforming tanh and sigmoid. The validation and test accuracies were closely matched (within 1-2\%), indicating good generalization without significant overfitting. Table~\ref{tab:fashion_results} summarizes our best architectures:
+    
+    \begin{table}[htb]
+    \centering
+    \caption{Best performing architectures on Fashion-MNIST}
+    \label{tab:fashion_results}
+    \begin{tabular}{lccc}
+    \hline
+    Architecture & Activation & Init & Test Accuracy (\%) \\
+    \hline
+    [256, 128] & ReLU & He & 88-90 \\
+    [128, 64] & ReLU & He & 86-88 \\
+    [512, 256] & ReLU & He & 85-87 \\
+    \hline
+    \end{tabular}
+    \end{table}
+
+    \item \textbf{CIFAR-10}
+    
+    We were able to reach test accuracy on the CIFAR-10 dataset with our FFNN, though the inherent complexity of the RGB image data presented significant challenges. Our best configuration achieved approximately 52\% test accuracy, which demonstrates that fully connected networks can learn meaningful patterns from complex image data when properly tuned, though performance is limited compared to convolutional architectures.
+    
+    Contrary to initial expectations, we found that single-layer networks even outperformed deeper ones on CIFAR-10. Our best result was achieved with a single hidden layer of 256 units using tanh activation and Xavier initialization, reaching 80.9\% validation accuracy (Run 101, epoch 113). However, this validation accuracy did not fully translate to test performance, with test accuracy around 52\%, indicating some overfitting to the validation set or differences in data distribution.
+    
+    We found that tanh activation outperformed ReLU with a slight margin on CIFAR-10, achieving validation accuracies in the range of 65-81\% depending on configuration, compared to ReLU's typical range of 50-65\%. However, overall performance varied significantly with hyperparameter configuration, with many runs converging around 50-55\% test accuracy, meaning the model was not able to capture intricate details of RGB images without convolutional operations.
+    
+    Optimal hyperparameters for CIFAR-10 differed substantially from Fashion-MNIST: learning rates of 0.0026-0.0049 (8-16x higher than Fashion-MNIST), L2 regularization of 0.0026-0.0042 (20-40x higher), dropout rates of 0.059-0.129, and batch sizes of 24-80. Training required 67-113 epochs for best runs to converge, with some configurations needing up to 194 epochs.
+    
+    \item \textbf{Key findings}
+    
+    Our experiments revealed several important insights:
+    
+    \begin{enumerate}
+        \item \textbf{Dataset-dependent activation function performance}: ReLU with He initialization performed best on Fashion-MNIST, while tanh with Xavier initialization achieved superior results on CIFAR-10. This highlights the importance of matching activation functions and initialization schemes to both the network architecture and dataset characteristics.
+        
+        \item \textbf{Overfitting behavior in deeper architectures}: On CIFAR-10, deeper networks ([512, 256], [256, 128]) showed signs of overfitting and optimization difficulties, with single-layer [256] achieving the best validation accuracy. This suggests that for fully connected networks on complex image data, capacity must be carefully balanced with regularization and optimization stability.
+        
+        \item \textbf{Tuning highly sensitive to learning rate and regularization}: Small changes in learning rate (e.g., 0.001 vs 0.003) or L2 lambda (e.g., 0.0001 vs 0.003) resulted in significant performance differences. This emphasizes the importance of systematic hyperparameter search using Bayesian optimization.
+        
+        \item \textbf{Adam offering fastest convergence}: Adam provided more stable convergence and faster training across both datasets, while SGD required careful learning rate tuning to match performance. RMSprop and Momentum provided intermediate performance.
+        
+        \item \textbf{Importance of matching initialization to activation}: Xavier initialization worked best with tanh, while He initialization was optimal for ReLU, confirming theoretical expectations. Mismatched pairs led to slower convergence and lower final accuracy.
+        
+        \item \textbf{Regularization crucial for preventing overfitting}: Both L2 weight decay and dropout were essential, especially on CIFAR-10. Optimal regularization strengths were dataset-dependent, with CIFAR-10 requiring substantially higher L2 values (0.002-0.005) compared to Fashion-MNIST (0.0001).
+    \end{enumerate}
+    
+    \item \textbf{PyTorch comparison}
+    
+    To verify the correctness of our NumPy implementation, we compared it against an equivalent PyTorch model with identical architecture, hyperparameters, and weight initialization. Our validation experiments confirmed numerical agreement within acceptable tolerances:
+    
+    \begin{itemize}
+        \item Forward pass outputs matched within $10^{-3}$ relative tolerance
+        \item Loss curves were nearly identical for matched models
+        \item Gradient shapes and values were consistent across all layers
+        \item Weight updates after training steps differed by less than $10^{-4}$ relative error
+    \end{itemize}
+    
+    The training curves for both implementations were nearly identical, with validation accuracies differing by less than 0.1\% after 20 epochs of training on Fashion-MNIST. This provides strong confidence that our NumPy implementation correctly implements forward propagation, backward propagation, and parameter updates according to the mathematical specifications.
+\end{itemize}
+
