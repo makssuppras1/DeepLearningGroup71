@@ -225,32 +225,54 @@ def main():
     # Initialize wandb run (wandb.agent will provide wandb.config for sweep values)
     default_config = get_default_config()
     
+    # Check if we're running as a sweep agent by checking environment
+    import os
+    is_sweep_agent = os.environ.get('WANDB_SWEEP_ID') is not None
+    
     try:
-        run = wandb.init(
-            project=default_config.get('project_name', 'neural-network-numpy'),
-            config=default_config,
-            resume='allow'
-        )
+        if is_sweep_agent:
+            # Running as sweep agent - don't pass config, let wandb get it from sweep
+            # wandb.init() will automatically get config from the sweep
+            run = wandb.init(
+                project=default_config.get('project_name', 'neural-network-numpy'),
+                resume='allow'
+            )
+        else:
+            # Standalone run - use default config
+            run = wandb.init(
+                project=default_config.get('project_name', 'neural-network-numpy'),
+                config=default_config,
+                resume='allow'
+            )
     except Exception as e:
         # If wandb fails to initialize, still allow local runs
         print(f"Warning: WandB init failed ({e}). Continuing without WandB.")
+        import traceback
+        traceback.print_exc()
         run = None
     
     # Get overrides from wandb.config (for sweeps) or use defaults
     try:
         if run is not None:
             cfg_override = dict(wandb.config)
-            print(f"Got config from WandB sweep: {len(cfg_override)} parameters")
+            print(f"Got config from WandB: {len(cfg_override)} parameters")
+            if len(cfg_override) > 0:
+                print(f"Sample config keys: {list(cfg_override.keys())[:5]}")
         else:
             cfg_override = {}
     except Exception as e:
         print(f"Warning: Could not get wandb.config: {e}")
+        import traceback
+        traceback.print_exc()
         cfg_override = {}
     
     # Start with defaults, then override from wandb.config (sweep)
     config = get_default_config()
     for k, v in cfg_override.items():
         config[k] = v
+    
+    print(f"Final config has {len(config)} parameters")
+    print(f"Dataset: {config.get('dataset')}, Hidden layers: {config.get('hidden_layers')}")
     
     # Validate required config keys
     required_keys = ['dataset', 'hidden_layers', 'output_size', 'num_epochs', 'batch_size', 'learning_rate']
