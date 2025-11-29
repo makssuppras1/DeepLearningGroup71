@@ -159,98 +159,131 @@ def train(config):
     except Exception:
         run = None
     
-    # Setup
-    set_random_seed(config.get('random_seed', 42))
-    setup_hpc_directories()
-    
-    # Load and preprocess data
-    project_root = get_project_root()
-    data_dir = get_data_dir(project_root)
-    X_train_full, y_train_full, X_test, y_test, input_size = load_data(config['dataset'], data_dir)
-    
-    num_classes = config.get('output_size', 10)
-    X_train_full, y_train_full = preprocess_data(X_train_full, y_train_full, num_classes=num_classes, flatten=True, normalize=True)
-    X_test, y_test = preprocess_data(X_test, y_test, num_classes=num_classes, flatten=True, normalize=True)
-    
-    # Split into train and validation sets
-    X_train, X_val, y_train, y_val = train_val_split(
-        X_train_full, y_train_full,
-        val_split=config.get('val_split', 0.2),
-        random_seed=config.get('random_seed', 42)
-    )
-    
-    # Create model
-    # Fix: Handle case where WandB passes lists instead of strings
-    activation = config.get('activation', 'relu')
-    if isinstance(activation, list):
-        activation = activation[0] if len(activation) > 0 else 'relu'
-    
-    output_activation = config.get('output_activation', 'softmax')
-    if isinstance(output_activation, list):
-        output_activation = output_activation[0] if len(output_activation) > 0 else 'softmax'
-    
-    model = NeuralNetwork(
-        input_size=input_size,
-        hidden_layers=config['hidden_layers'],
-        output_size=num_classes,
-        activation=activation,
-        output_activation=output_activation,
-        learning_rate=config['learning_rate'],
-        optimizer=config.get('optimizer', 'adam'),
-        weight_init=config.get('weight_init', 'he'),
-        l2_lambda=config.get('l2_lambda', 0.0),
-        dropout_rate=config.get('dropout_rate', 0.0),
-        random_seed=config.get('random_seed', 42)
-    )
-    
-    # Training loop
-    num_epochs = config.get('num_epochs', 50)
-    batch_size = config.get('batch_size', 64)
-    best_val_acc = 0.0
-    best_model_params = None
-    
-    for epoch in tqdm(range(num_epochs), desc="Training"):
-        train_loss, train_acc = train_epoch(model, X_train, y_train, batch_size)
-        val_loss, val_acc = evaluate(model, X_val, y_val)
+    try:
+        # Setup
+        set_random_seed(config.get('random_seed', 42))
+        setup_hpc_directories()
         
-        # Save best model based on validation accuracy
-        if val_acc > best_val_acc:
-            best_val_acc = val_acc
-            best_model_params = model.get_params()
+        # Load and preprocess data
+        project_root = get_project_root()
+        data_dir = get_data_dir(project_root)
+        X_train_full, y_train_full, X_test, y_test, input_size = load_data(config['dataset'], data_dir)
         
-        # Log metrics to WandB
+        num_classes = config.get('output_size', 10)
+        X_train_full, y_train_full = preprocess_data(X_train_full, y_train_full, num_classes=num_classes, flatten=True, normalize=True)
+        X_test, y_test = preprocess_data(X_test, y_test, num_classes=num_classes, flatten=True, normalize=True)
+        
+        # Split into train and validation sets
+        X_train, X_val, y_train, y_val = train_val_split(
+            X_train_full, y_train_full,
+            val_split=config.get('val_split', 0.2),
+            random_seed=config.get('random_seed', 42)
+        )
+        
+        # Create model
+        # Fix: Handle case where WandB passes lists instead of strings
+        activation = config.get('activation', 'relu')
+        if isinstance(activation, list):
+            activation = activation[0] if len(activation) > 0 else 'relu'
+        
+        output_activation = config.get('output_activation', 'softmax')
+        if isinstance(output_activation, list):
+            output_activation = output_activation[0] if len(output_activation) > 0 else 'softmax'
+        
+        model = NeuralNetwork(
+            input_size=input_size,
+            hidden_layers=config['hidden_layers'],
+            output_size=num_classes,
+            activation=activation,
+            output_activation=output_activation,
+            learning_rate=config['learning_rate'],
+            optimizer=config.get('optimizer', 'adam'),
+            weight_init=config.get('weight_init', 'he'),
+            l2_lambda=config.get('l2_lambda', 0.0),
+            dropout_rate=config.get('dropout_rate', 0.0),
+            random_seed=config.get('random_seed', 42)
+        )
+        
+        # Training loop
+        num_epochs = config.get('num_epochs', 50)
+        batch_size = config.get('batch_size', 64)
+        best_val_acc = 0.0
+        best_model_params = None
+        
+        for epoch in tqdm(range(num_epochs), desc="Training"):
+            try:
+                train_loss, train_acc = train_epoch(model, X_train, y_train, batch_size)
+                val_loss, val_acc = evaluate(model, X_val, y_val)
+                
+                # Save best model based on validation accuracy
+                if val_acc > best_val_acc:
+                    best_val_acc = val_acc
+                    best_model_params = model.get_params()
+                
+                # Log metrics to WandB
+                if run is not None:
+                    run.log({
+                        'epoch': epoch,
+                        'train_loss': train_loss,
+                        'val_loss': val_loss,
+                        'train_acc': train_acc,
+                        'val_acc': val_acc
+                    })
+            except Exception as e:
+                # Log the error to wandb if possible
+                if run is not None:
+                    try:
+                        run.log({'error': str(e), 'epoch': epoch})
+                    except:
+                        pass
+                print(f"❌ Error during epoch {epoch}: {e}")
+                import traceback
+                traceback.print_exc()
+                raise  # Re-raise to be caught by outer try-except
+        
+        # Evaluate best model on test set
+        if best_model_params is not None:
+            model.set_params(best_model_params)
+            test_loss, test_acc = evaluate(model, X_test, y_test)
+            
+            if run is not None:
+                run.log({'test_loss': test_loss, 'test_acc': test_acc})
+            
+            # Save model
+            results_dir = get_results_dir(project_root)
+            models_dir = os.path.join(results_dir, 'models')
+            os.makedirs(models_dir, exist_ok=True)
+            
+            experiment_name = config.get('experiment_name', 'baseline')
+            model_path = os.path.join(models_dir, f"{experiment_name}_best.pkl")
+            with open(model_path, 'wb') as f:
+                pickle.dump(best_model_params, f)
+        else:
+            print("⚠️  Warning: No best model to save (training may have failed)")
+    
+    except Exception as e:
+        # Log error to wandb before finishing
         if run is not None:
-            run.log({
-                'epoch': epoch,
-                'train_loss': train_loss,
-                'val_loss': val_loss,
-                'train_acc': train_acc,
-                'val_acc': val_acc
-            })
+            try:
+                run.log({'error': str(e), 'training_failed': True})
+                if hasattr(run, 'summary'):
+                    run.summary['status'] = 'failed'
+                    run.summary['error'] = str(e)
+            except:
+                pass
+        print(f"❌ Training failed with error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise  # Re-raise to propagate the error
     
-    # Evaluate best model on test set
-    model.set_params(best_model_params)
-    test_loss, test_acc = evaluate(model, X_test, y_test)
-    
-    if run is not None:
-        run.log({'test_loss': test_loss, 'test_acc': test_acc})
-    
-    # Save model
-    results_dir = get_results_dir(project_root)
-    models_dir = os.path.join(results_dir, 'models')
-    os.makedirs(models_dir, exist_ok=True)
-    
-    experiment_name = config.get('experiment_name', 'baseline')
-    model_path = os.path.join(models_dir, f"{experiment_name}_best.pkl")
-    with open(model_path, 'wb') as f:
-        pickle.dump(best_model_params, f)
-    
-    if run is not None:
-        try:
-            run.finish()
-            print(f"✅ WandB run completed. View at: {run.url}")
-        except Exception:
-            pass
+    finally:
+        # Always finish wandb run, even if training failed
+        if run is not None:
+            try:
+                run.finish()
+                print(f"✅ WandB run completed. View at: {run.url}")
+            except Exception as e:
+                print(f"⚠️  Warning: Could not finish wandb run: {e}")
 
 
 def parse_command_line_args():
@@ -418,7 +451,19 @@ def main():
         if not isinstance(config['learning_rate'], (int, float)):
             raise ValueError(f"learning_rate must be a number, got {type(config['learning_rate'])}: {config['learning_rate']}")
     
-    train(config)
+    try:
+        train(config)
+    except Exception as e:
+        # Ensure wandb run is finished even if train() fails
+        if run is not None:
+            try:
+                if hasattr(run, 'summary'):
+                    run.summary['status'] = 'failed'
+                    run.summary['error'] = str(e)
+                run.finish()
+            except:
+                pass
+        raise  # Re-raise to propagate the error
 
 
 if __name__ == '__main__':
