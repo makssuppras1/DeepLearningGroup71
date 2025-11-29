@@ -3,10 +3,6 @@ method: grid  # Bayesian optimization for efficient search
 project: neural-network-numpy
 name: fashion_mnist_sweep_final
 
-early_terminate:
-  type: hyperband
-  min_iter: 3  # Allow runs to develop before early stopping
-
 metric:
   name: val_loss
   goal: minimize
