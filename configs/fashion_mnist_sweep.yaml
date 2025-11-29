@@ -1,5 +1,5 @@
 program: experiments/train_simple.py
-method: bayes  # Bayesian optimization for efficient search
+method: grid  # Bayesian optimization for efficient search
 project: neural-network-numpy
 name: Fashion_MNIST_HPC_sweep
 
@@ -16,36 +16,24 @@ parameters:
     values: [sgd, adam, momentum, rmsprop]  # Test different optimizers
   hidden_layers:
     values:
-      - [32, 32, 32]  # Deep three-layer
-      - [64, 64, 64]  # Deep three-layer
-      - [128, 128, 128]  # Deep three-layer
-      - [32, 32, 32, 32]  # Deep three-layer
-      - [64, 64, 64, 64]  # Deep three-layer
-      - [128, 128, 128, 128]  # Deep three-layer
+      - [512, 256, 128]
+      - [128, 128, 128, 128, 128, 128]
   l2_lambda:
-    distribution: uniform
-    min: 0.00001  # Very small regularization
-    max: 0.001      # Larger regularization
+    values: [0.1, 0.0001]    # Larger regularization
   learning_rate:
-    distribution: uniform
-    min: 0.00001   # Small learning rate
-    max: 0.005     # Larger learning rate
+    values: [0.01, 0.0001] 
   batch_size:
-    values: [32, 64, 128]
+    values: [32, 128]
   activation:
     values: [relu, tanh, sigmoid]  # Test different activations
   output_activation:
     value: softmax
   num_epochs:
-    distribution: int_uniform
-    min: 100     # Minimum epochs
-    max: 150    # Maximum epochs
+    values: [100, 125, 150]  # Grid search requires discrete values
   weight_init:
     values: [xavier, he, random]  # Test different initializations
   dropout_rate:
-    distribution: uniform
-    min: 0.0    # No dropout
-    max: 0.5    # High dropout
+    values: [0.5, 0.2, 0.1] 
   dataset:
     value: fashion_mnist  # Fixed to Fashion-MNIST
   output_size:
@@ -56,4 +44,3 @@ parameters:
     value: 42
   use_wandb:
     value: true
-
