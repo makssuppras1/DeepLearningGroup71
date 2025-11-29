@@ -99,7 +99,7 @@ source deeplearning/bin/activate
 
 export WANDB_PROJECT="neural-network-numpy"
 export WANDB_ENTITY="makssuppras1-danmarks-tekniske-universitet-dtu"
-SWEEP_PATH="makssuppras1-danmarks-tekniske-universitet-dtu/neural-network-numpy/2b5dltbp"
+SWEEP_PATH="makssuppras1-danmarks-tekniske-universitet-dtu/neural-network-numpy/luc7yoz5"
 
 # Kill any old agents first
 pkill -f "wandb agent"
