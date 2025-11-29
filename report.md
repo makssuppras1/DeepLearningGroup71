@@ -2,9 +2,15 @@
 
 ## 1. Introduction
 
-This project implements a fully-connected feedforward neural network from scratch using NumPy, demonstrating core deep learning concepts including forward and backward propagation, optimization algorithms, and regularization techniques. The implementation is validated through comparison with PyTorch and evaluated on image classification tasks using Fashion-MNIST and CIFAR-10 datasets.
+This project implements a complete, production-ready neural network framework from scratch using only NumPy, without relying on high-level deep learning libraries. The goal is to build a fully-functional feedforward neural network that demonstrates a deep understanding of the fundamental principles underlying modern deep learning systems. By implementing every component manually—from matrix operations and activation functions to backpropagation and optimization algorithms—this project provides hands-on experience with the mathematical foundations of neural networks.
 
-The primary objectives were to: (1) implement a complete neural network framework with automatic differentiation, (2) compare the NumPy implementation with PyTorch to verify correctness, (3) conduct hyperparameter tuning using WandB sweeps, and (4) achieve competitive classification performance on benchmark datasets.
+The implementation includes a modular architecture supporting multiple activation functions (ReLU, tanh, sigmoid), various optimization algorithms (SGD, Momentum, RMSprop, Adam), weight initialization schemes (Xavier/Glorot, He), and regularization techniques (L2 regularization, dropout). The framework is designed to be flexible and configurable, allowing for easy experimentation with different architectures and hyperparameters.
+
+To ensure correctness and validate the implementation, the NumPy-based network is systematically compared against an equivalent PyTorch implementation. This validation process involves comparing forward pass outputs, loss computations, gradient values, and weight updates to confirm numerical agreement within acceptable tolerances.
+
+The project is evaluated on two benchmark image classification datasets: Fashion-MNIST (grayscale fashion items) and CIFAR-10 (color natural images). These datasets present different levels of complexity, allowing for comprehensive testing of the implementation's capabilities. Extensive hyperparameter tuning is conducted using WandB (Weights & Biases) sweeps with Bayesian optimization, running experiments on DTU's HPC cluster for efficient parallel exploration of the hyperparameter space.
+
+The primary objectives of this project are: (1) to implement a complete neural network framework with automatic differentiation and backpropagation from first principles, (2) to validate the correctness of the implementation through systematic comparison with PyTorch, (3) to conduct comprehensive hyperparameter tuning using WandB sweeps on HPC infrastructure, and (4) to achieve competitive classification performance on benchmark datasets, demonstrating that a from-scratch implementation can match the capabilities of established frameworks.
 
 ## 2. Methods
 

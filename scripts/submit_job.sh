@@ -70,7 +70,7 @@ echo "Learning rate: $LR"
 echo "Experiment name: $EXPERIMENT_NAME"
 echo ""
 
-python experiments/train2.py \
+python experiments/train.py \
     --dataset "$DATASET" \
     --epochs "$EPOCHS" \
     --batch-size "$BATCH_SIZE" \
