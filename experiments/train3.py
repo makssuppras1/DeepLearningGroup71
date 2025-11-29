@@ -63,12 +63,16 @@ def evaluate(model, X_val, y_val):
 DEFAULT_CONFIG = {
     'dataset': 'cifar10',
     'input_size': 3072,
-    'hidden_layers': [512, 256],
+    # New configuration: specify number of hidden layers and neurons per layer.
+    # The script will construct `hidden_layers` from these values so sweeps can
+    # vary the depth independently from the width.
+    'num_hidden_layers': 2,
+    'num_neurons': 256,
     'output_size': 10,
     'activation': 'relu',
     'output_activation': 'softmax',
     'loss': 'cross_entropy',
-    'num_epochs': 200,
+    'num_epochs': 75,
     'batch_size': 32,
     'learning_rate': 0.00005557087831314196,
     'optimizer': 'adam',
@@ -189,16 +193,52 @@ def main():
     for k, v in cfg_override.items():
         config[k] = v
 
-    # Normalize common cases where sweep defines single int for hidden_layers
-    h = config.get('hidden_layers')
-    if isinstance(h, int):
-        config['hidden_layers'] = [h]
-    elif isinstance(h, str):
-        # allow comma-separated string
-        try:
-            config['hidden_layers'] = [int(x.strip()) for x in h.split(',') if x.strip()]
-        except Exception:
-            pass
+    # Build `hidden_layers` from the new sweep parameters if needed.
+    # Backwards-compatible: if `hidden_layers` is provided as a list, keep it.
+    if 'hidden_layers' in config and isinstance(config['hidden_layers'], list):
+        pass
+    else:
+        # Prefer explicit num_hidden_layers + num_neurons parameters
+        n_layers = config.get('num_hidden_layers')
+        neurons = config.get('num_neurons')
+        if n_layers is not None:
+            try:
+                n = int(n_layers)
+            except Exception:
+                n = None
+        else:
+            n = None
+
+        if isinstance(neurons, int):
+            # single int: repeat it across layers
+            if n is not None and n > 0:
+                config['hidden_layers'] = [int(neurons)] * n
+            else:
+                config['hidden_layers'] = []
+        elif isinstance(neurons, list):
+            # list provided: if it matches requested depth use it, else attempt sensible fallback
+            if n is not None and len(neurons) == n:
+                config['hidden_layers'] = [int(x) for x in neurons]
+            elif len(neurons) == 1 and n is not None:
+                config['hidden_layers'] = [int(neurons[0])] * n
+            else:
+                # fallback: use the list as-is (may be a full architecture)
+                config['hidden_layers'] = [int(x) for x in neurons]
+        elif isinstance(neurons, str):
+            # allow comma-separated string like "128,64"
+            try:
+                parts = [int(x.strip()) for x in neurons.split(',') if x.strip()]
+            except Exception:
+                parts = []
+            if n is not None and len(parts) == 1:
+                config['hidden_layers'] = [parts[0]] * n
+            elif n is not None and len(parts) == n:
+                config['hidden_layers'] = parts
+            else:
+                config['hidden_layers'] = parts
+        else:
+            # no information: default to empty list
+            config['hidden_layers'] = []
 
     train(config)
 
