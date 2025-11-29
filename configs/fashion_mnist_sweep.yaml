@@ -28,11 +28,13 @@ parameters:
       - [1024, 512]       # Deep two-layer
       - [1024, 512, 256]  # Deep three-layer
   l2_lambda:
-    distribution: log_uniform_values
-    values: [0.00001, 0.0001, 0.001, 0.01, 0.1]  # Wide range for regularization
+    distribution: log_uniform
+    min: 0.00001  # Very small regularization
+    max: 0.1      # Larger regularization
   learning_rate:
-    distribution: log_uniform_values
-    values: [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05]  # Wide range
+    distribution: log_uniform
+    min: 0.0001   # Small learning rate
+    max: 0.05     # Larger learning rate
   batch_size:
     distribution: q_log_uniform_values
     q: 8        # Fine-grained increments
