@@ -1,7 +1,7 @@
 program: experiments/train_simple.py
 method: grid  # Bayesian optimization for efficient search
 project: neural-network-numpy
-name: Fashion_MNIST_HPC_sweep
+name: fashion_mnist_sweep_final
 
 early_terminate:
   type: hyperband
