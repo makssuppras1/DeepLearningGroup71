@@ -31,7 +31,7 @@ parameters:
   weight_init:
     value: he  # Test different initializations
   dropout_rate:
-    values: [0.5, 0.2, 0.1] 
+    values: [0.4, 0.2, 0.1] 
   dataset:
     value: fashion_mnist  # Fixed to Fashion-MNIST
   output_size:
