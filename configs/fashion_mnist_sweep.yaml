@@ -13,25 +13,25 @@ metric:
 
 parameters:
   optimizer:
-    values: [sgd, adam, momentum, rmsprop]  # Test different optimizers
+    values: [sgd, adam]  # Test different optimizers
   hidden_layers:
     values:
       - [512, 256, 128]
       - [128, 128, 128, 128, 128, 128]
   l2_lambda:
-    values: [0.1, 0.0001]    # Larger regularization
+    values: [0.01, 0.0001]    # Larger regularization
   learning_rate:
     values: [0.01, 0.0001] 
   batch_size:
-    values: [32, 128]
+    value: 64
   activation:
-    values: [relu, tanh, sigmoid]  # Test different activations
+    value: relu  # Test different activations
   output_activation:
     value: softmax
   num_epochs:
-    values: [100, 125, 150]  # Grid search requires discrete values
+    value: 100  # Grid search requires discrete values
   weight_init:
-    values: [xavier, he, random]  # Test different initializations
+    value: he  # Test different initializations
   dropout_rate:
     values: [0.5, 0.2, 0.1] 
   dataset:
