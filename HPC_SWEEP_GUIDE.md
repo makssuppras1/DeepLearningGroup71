@@ -57,6 +57,15 @@ source deeplearning/bin/activate
 cd $BLACKHOLE/DeepLearningGroup71
 source deeplearning/bin/activate
 
+
+########
+
+# BRUG DEN HER!!!!!!!!
+
+#######
+./scripts/setup_fashion_mnist_sweep.sh 5 20
+
+
 # Set WandB project
 export WANDB_PROJECT="neural-network-numpy"
 
