@@ -92,13 +92,16 @@ class NeuralNetwork:
             # L2 regulariation
             if self.l2_lambda > 0:
                 layer.dW += (self.l2_lambda / m) * layer.W
-            # Apply dropout mask to gradient
-            if idx < len(self.dropout_masks) - 1:
-                dropout_mask = self.dropout_masks[idx]
-                if dropout_mask is not None:
-                    dA = dA * dropout_mask
             # Propagate to prev layer
             dA = dZ @ layer.W.T
+            # Apply dropout mask to gradient flowing into previous layer
+            # The mask should match the one applied in forward pass for that layer
+            if idx > 0:  # Not the first layer (input layer has no dropout)
+                prev_layer_idx = idx - 1
+                if prev_layer_idx < len(self.dropout_masks):
+                    dropout_mask = self.dropout_masks[prev_layer_idx]
+                    if dropout_mask is not None:
+                        dA = dA * dropout_mask
     
     def update_weights(self):
         # Update weights using optimzer
