@@ -234,14 +234,20 @@ def main():
     # Initialize wandb run (wandb.agent will provide wandb.config for sweep values)
     default_config = get_default_config()
     
-    # Check if we're running as a sweep agent by checking environment
+    # Check if we're running as a sweep agent
+    # When wandb agent runs this, it sets up sweep context automatically
     import os
-    is_sweep_agent = os.environ.get('WANDB_SWEEP_ID') is not None
+    is_sweep_agent = (
+        os.environ.get('WANDB_SWEEP_ID') is not None or
+        os.environ.get('WANDB_MODE') == 'sweep'
+    )
     
     try:
+        # Always try to initialize wandb - it will detect sweep mode automatically
+        # If running as sweep agent, don't pass config (wandb will get it from sweep)
+        # If standalone, pass default config
         if is_sweep_agent:
-            # Running as sweep agent - don't pass config, let wandb get it from sweep
-            # wandb.init() will automatically get config from the sweep
+            # Running as sweep agent - let wandb get config from sweep automatically
             run = wandb.init(
                 project=default_config.get('project_name', 'neural-network-numpy'),
                 resume='allow'
@@ -260,13 +266,28 @@ def main():
         traceback.print_exc()
         run = None
     
-    # Get overrides from wandb.config (for sweeps) or use defaults
+    # Get config from wandb.config (for sweeps) or use defaults
+    # IMPORTANT: When wandb agent runs this, wandb.config is automatically populated
+    # from the sweep, even if we didn't detect is_sweep_agent correctly
     try:
         if run is not None:
-            cfg_override = dict(wandb.config)
-            print(f"Got config from WandB: {len(cfg_override)} parameters")
+            # Try to get config from wandb - this works in both sweep and standalone mode
+            cfg_override = dict(wandb.config) if hasattr(wandb, 'config') else {}
+            
+            # Log the config to verify each agent gets different values
+            print("=" * 60)
+            print("CONFIG FROM WANDB:")
+            print(f"  Number of parameters: {len(cfg_override)}")
             if len(cfg_override) > 0:
-                print(f"Sample config keys: {list(cfg_override.keys())[:5]}")
+                print(f"  Key hyperparameters:")
+                for key in ['optimizer', 'hidden_layers', 'learning_rate', 'batch_size', 
+                           'activation', 'l2_lambda', 'num_epochs', 'weight_init', 'dropout_rate']:
+                    if key in cfg_override:
+                        print(f"    {key}: {cfg_override[key]}")
+                print(f"  All keys: {list(cfg_override.keys())}")
+            else:
+                print("  WARNING: No config from wandb.config - using defaults!")
+            print("=" * 60)
         else:
             cfg_override = {}
     except Exception as e:
@@ -282,6 +303,7 @@ def main():
     
     print(f"Final config has {len(config)} parameters")
     print(f"Dataset: {config.get('dataset')}, Hidden layers: {config.get('hidden_layers')}")
+    print(f"Optimizer: {config.get('optimizer')}, LR: {config.get('learning_rate')}, Batch: {config.get('batch_size')}")
     
     # Validate required config keys
     required_keys = ['dataset', 'hidden_layers', 'output_size', 'num_epochs', 'batch_size', 'learning_rate']
