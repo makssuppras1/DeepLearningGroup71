@@ -81,6 +81,21 @@ def evaluate(model, X_val, y_val):
     return loss, accuracy
 
 
+def unwrap_wandb_config(config_dict):
+    """
+    Unwrap wandb config values that may be wrapped in {'value': ...} structure.
+    This can happen when config is serialized/deserialized or accessed via API.
+    """
+    unwrapped = {}
+    for key, value in config_dict.items():
+        if isinstance(value, dict) and 'value' in value and len(value) == 1:
+            # Unwrap if it's a dict with only 'value' key
+            unwrapped[key] = value['value']
+        else:
+            unwrapped[key] = value
+    return unwrapped
+
+
 def init_wandb(config):
     # Initialize WandB if enabled. Returns run object if WandB is active, None otherwise
     use_wandb = config.get('use_wandb', True)
@@ -273,6 +288,9 @@ def main():
         if run is not None:
             # Try to get config from wandb - this works in both sweep and standalone mode
             cfg_override = dict(wandb.config) if hasattr(wandb, 'config') else {}
+            # Unwrap any values that are wrapped in {'value': ...} structure
+            # This can happen when config is serialized/deserialized
+            cfg_override = unwrap_wandb_config(cfg_override)
             
             # Log the config to verify each agent gets different values
             print("=" * 60)

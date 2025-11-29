@@ -1,94 +1,34 @@
-#!/usr/bin/env python3
-"""
-Create WandB sweep for HPC using the configuration from train3.ipynb
-Usage: python create_hpc_sweep.py
-"""
-
+# Create WandB sweep for HPC
 import wandb
 import os
 import sys
-
-# Add project root to path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-# Sweep configuration (from train3.ipynb)
-# Note: Remove 'entity' if using personal account, or use correct entity name
+# Sweep config
 sweep_config = {
     'program': 'experiments/train_simple.py',
     'method': 'bayes',
     'project': 'neural-network-numpy',
     'name': 'HPC_sweep',
-
-    'early_terminate': {
-        'type': 'hyperband',
-        'min_iter': 2
-    },
-    'metric': {
-        'name': 'val_acc',
-        'goal': 'maximize'   
-    },
+    'early_terminate': {'type': 'hyperband', 'min_iter': 2},
+    'metric': {'name': 'val_acc', 'goal': 'maximize'},
     'parameters': {
-        'optimizer': {
-            'values': ['adam', 'sgd']
-        },
-        'hidden_layers': {
-            'values': [
-                [32],
-                [64],
-                [128],
-                [256],
-                [128, 64],
-                [256, 128],
-                [512, 256],
-                [128, 64, 32],
-                [1024, 512, 256],
-                [2048, 1024, 512],
-                [4096, 2048, 1024]
-            ]
-        },
-        'l2_lambda': {
-            'distribution': 'uniform',
-            'min': 0.000001,
-            'max': 0.01
-        },
-        'learning_rate': {
-            'distribution': 'uniform',
-            'min': 0.0000001,
-            'max': 0.1
-        },
-        'batch_size': {
-            'distribution': 'q_log_uniform_values',
-            'q': 8,
-            'min': 8,
-            'max': 128,
-        },
-        'activation': {
-            'values': ['relu', 'sigmoid', 'tanh']
-        },
-        'output_activation': {
-            'value': 'softmax'  # Keep fixed - softmax is standard for multi-class
-        },
-        'num_epochs': {
-            'distribution': 'int_uniform',
-            'min': 100,
-            'max': 200
-        },
-        'weight_init': {
-            'values': ['random', 'xavier', 'he']
-        },
-        'dropout_rate': {
-            'distribution': 'uniform',
-            'min': 0.0,
-            'max': 0.5
-        },
-        # Fixed parameters
+        'optimizer': {'values': ['adam', 'sgd']},
+        'hidden_layers': {'values': [[32], [64], [128], [256], [128, 64], [256, 128], [512, 256], [128, 64, 32], [1024, 512, 256], [2048, 1024, 512], [4096, 2048, 1024]]},
+        'l2_lambda': {'distribution': 'uniform', 'min': 0.000001, 'max': 0.01},
+        'learning_rate': {'distribution': 'uniform', 'min': 0.0000001, 'max': 0.1},
+        'batch_size': {'distribution': 'q_log_uniform_values', 'q': 8, 'min': 8, 'max': 128},
+        'activation': {'values': ['relu', 'sigmoid', 'tanh']},
+        'output_activation': {'value': 'softmax'},
+        'num_epochs': {'distribution': 'int_uniform', 'min': 100, 'max': 200},
+        'weight_init': {'values': ['random', 'xavier', 'he']},
+        'dropout_rate': {'distribution': 'uniform', 'min': 0.0, 'max': 0.5},
         'dataset': {'value': 'cifar10'},
         'output_size': {'value': 10},
         'val_split': {'value': 0.2},
         'random_seed': {'value': 42},
         'use_wandb': {'value': True}
-        # Note: entity will be set automatically based on your WandB login
     }
 }
 
@@ -103,7 +43,6 @@ if __name__ == '__main__':
         print(f"ERROR: WandB not logged in. Run 'wandb login' first.")
         print(f"Error details: {e}")
         sys.exit(1)
-    
     # Check WandB status
     try:
         import subprocess
@@ -114,7 +53,6 @@ if __name__ == '__main__':
             print("Warnings:", result.stderr)
     except:
         pass
-    
     print("\nCreating WandB sweep...")
     print(f"Project: {sweep_config['project']}")
     if 'entity' in sweep_config:
@@ -123,15 +61,13 @@ if __name__ == '__main__':
         print("Entity: (using default/personal account)")
     print(f"Method: {sweep_config['method']}")
     print("")
-    
-    # Try to initialize wandb first to ensure project exists
+    # Try to init wandb first
     try:
         test_run = wandb.init(project=sweep_config['project'], mode='disabled')
         wandb.finish()
     except Exception as e:
         print(f"Warning: Could not verify project access: {e}")
         print("Continuing anyway...")
-    
     # Create sweep
     try:
         sweep_id = wandb.sweep(sweep_config)
@@ -143,7 +79,6 @@ if __name__ == '__main__':
         print("3. Try creating the project first via WandB web interface")
         print("4. Ensure your WandB account has sweep permissions")
         sys.exit(1)
-    
     print("=" * 60)
     print(f"✅ Sweep created successfully!")
     print(f"Sweep ID: {sweep_id}")
@@ -157,4 +92,3 @@ if __name__ == '__main__':
     print("Or submit multiple agents in parallel:")
     print(f"  for i in {{1..5}}; do sbatch scripts/submit_sweep_agent.sh {sweep_id} 10; done")
     print("")
-
