@@ -85,12 +85,21 @@ def unwrap_wandb_config(config_dict):
     """
     Unwrap wandb config values that may be wrapped in {'value': ...} structure.
     This can happen when config is serialized/deserialized or accessed via API.
+    
+    Handles cases where wandb returns config values as:
+    - {'value': actual_value} instead of just actual_value
+    - Recursively unwraps nested structures if needed
     """
     unwrapped = {}
     for key, value in config_dict.items():
-        if isinstance(value, dict) and 'value' in value and len(value) == 1:
-            # Unwrap if it's a dict with only 'value' key
-            unwrapped[key] = value['value']
+        # Check if value is wrapped in {'value': ...} structure
+        if isinstance(value, dict) and 'value' in value:
+            # Unwrap - handle both single-key dicts and dicts with 'value' key
+            unwrapped_value = value['value']
+            # Recursively unwrap if the unwrapped value is also a dict with 'value' key
+            if isinstance(unwrapped_value, dict) and 'value' in unwrapped_value:
+                unwrapped_value = unwrapped_value['value']
+            unwrapped[key] = unwrapped_value
         else:
             unwrapped[key] = value
     return unwrapped
@@ -328,6 +337,21 @@ def main():
     missing_keys = [k for k in required_keys if k not in config]
     if missing_keys:
         raise ValueError(f"Missing required config keys: {missing_keys}")
+    
+    # Validate config value types to catch unwrapping issues early
+    if 'hidden_layers' in config:
+        if isinstance(config['hidden_layers'], dict):
+            raise ValueError(f"hidden_layers is still a dict after unwrapping: {config['hidden_layers']}. "
+                           f"This indicates a config unwrapping issue.")
+        if not isinstance(config['hidden_layers'], (list, tuple)):
+            raise ValueError(f"hidden_layers must be a list/tuple, got {type(config['hidden_layers'])}: {config['hidden_layers']}")
+    
+    if 'learning_rate' in config:
+        if isinstance(config['learning_rate'], dict):
+            raise ValueError(f"learning_rate is still a dict after unwrapping: {config['learning_rate']}. "
+                           f"This indicates a config unwrapping issue.")
+        if not isinstance(config['learning_rate'], (int, float)):
+            raise ValueError(f"learning_rate must be a number, got {type(config['learning_rate'])}: {config['learning_rate']}")
     
     train(config)
 
