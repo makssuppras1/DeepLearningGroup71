@@ -156,12 +156,21 @@ def train(config):
     )
     
     # Create model
+    # Fix: Handle case where WandB passes lists instead of strings
+    activation = config.get('activation', 'relu')
+    if isinstance(activation, list):
+        activation = activation[0] if len(activation) > 0 else 'relu'
+    
+    output_activation = config.get('output_activation', 'softmax')
+    if isinstance(output_activation, list):
+        output_activation = output_activation[0] if len(output_activation) > 0 else 'softmax'
+    
     model = NeuralNetwork(
         input_size=input_size,
         hidden_layers=config['hidden_layers'],
         output_size=num_classes,
-        activation=config.get('activation', 'relu'),
-        output_activation=config.get('output_activation', 'softmax'),
+        activation=activation,
+        output_activation=output_activation,
         learning_rate=config['learning_rate'],
         optimizer=config.get('optimizer', 'adam'),
         weight_init=config.get('weight_init', 'he'),

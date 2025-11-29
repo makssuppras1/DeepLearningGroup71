@@ -35,7 +35,7 @@ parameters:
   activation:
     values: [relu, tanh, sigmoid]  # Test different activations
   output_activation:
-    values: [softmax]
+    value: softmax
   num_epochs:
     distribution: int_uniform
     min: 100     # Minimum epochs
