@@ -253,17 +253,71 @@ def train(config):
             pass
 
 
+def parse_command_line_args():
+    """
+    Parse command-line arguments that wandb passes when using program: in sweep config.
+    Returns a dict with parsed values, or empty dict if no args.
+    """
+    import argparse
+    import ast
+    
+    parser = argparse.ArgumentParser(allow_abbrev=False)
+    
+    # Add all possible config parameters
+    parser.add_argument('--activation', type=str, default=None)
+    parser.add_argument('--batch_size', type=int, default=None)
+    parser.add_argument('--dataset', type=str, default=None)
+    parser.add_argument('--dropout_rate', type=float, default=None)
+    parser.add_argument('--hidden_layers', type=str, default=None)  # Will parse as string first
+    parser.add_argument('--l2_lambda', type=float, default=None)
+    parser.add_argument('--learning_rate', type=float, default=None)
+    parser.add_argument('--num_epochs', type=int, default=None)
+    parser.add_argument('--optimizer', type=str, default=None)
+    parser.add_argument('--output_activation', type=str, default=None)
+    parser.add_argument('--output_size', type=int, default=None)
+    parser.add_argument('--random_seed', type=int, default=None)
+    parser.add_argument('--use_wandb', type=lambda x: x.lower() == 'true', default=None)
+    parser.add_argument('--val_split', type=float, default=None)
+    parser.add_argument('--weight_init', type=str, default=None)
+    
+    args = parser.parse_args()
+    
+    # Convert to dict, only including non-None values
+    cmd_config = {}
+    for key, value in vars(args).items():
+        if value is not None:
+            # Special handling for hidden_layers - parse string representation of list
+            if key == 'hidden_layers':
+                try:
+                    # Try to parse as Python literal (list)
+                    cmd_config[key] = ast.literal_eval(value)
+                except (ValueError, SyntaxError):
+                    # If that fails, try splitting by comma
+                    try:
+                        cmd_config[key] = [int(x.strip()) for x in value.strip('[]').split(',')]
+                    except:
+                        raise ValueError(f"Could not parse hidden_layers: {value}")
+            else:
+                cmd_config[key] = value
+    
+    return cmd_config
+
+
 def main():
     # Main function - works for both standalone runs and WandB sweeps
     # Initialize wandb run (wandb.agent will provide wandb.config for sweep values)
     default_config = get_default_config()
+    
+    # Parse command-line arguments (wandb passes these when using program: in sweep config)
+    cmd_config = parse_command_line_args()
     
     # Check if we're running as a sweep agent
     # When wandb agent runs this, it sets up sweep context automatically
     import os
     is_sweep_agent = (
         os.environ.get('WANDB_SWEEP_ID') is not None or
-        os.environ.get('WANDB_MODE') == 'sweep'
+        os.environ.get('WANDB_MODE') == 'sweep' or
+        len(cmd_config) > 0  # If command-line args are present, likely a sweep
     )
     
     try:
@@ -290,40 +344,51 @@ def main():
         traceback.print_exc()
         run = None
     
-    # Get config from wandb.config (for sweeps) or use defaults
+    # Get config from multiple sources (priority: command-line > wandb.config > defaults)
     # IMPORTANT: When wandb agent runs this, wandb.config is automatically populated
     # from the sweep, even if we didn't detect is_sweep_agent correctly
+    cfg_override = {}
+    
+    # First, try to get config from wandb.config
     try:
         if run is not None:
             # Try to get config from wandb - this works in both sweep and standalone mode
-            cfg_override = dict(wandb.config) if hasattr(wandb, 'config') else {}
+            wandb_cfg = dict(wandb.config) if hasattr(wandb, 'config') else {}
             # Unwrap any values that are wrapped in {'value': ...} structure
             # This can happen when config is serialized/deserialized
-            cfg_override = unwrap_wandb_config(cfg_override)
+            wandb_cfg = unwrap_wandb_config(wandb_cfg)
+            cfg_override.update(wandb_cfg)
             
             # Log the config to verify each agent gets different values
             print("=" * 60)
             print("CONFIG FROM WANDB:")
-            print(f"  Number of parameters: {len(cfg_override)}")
-            if len(cfg_override) > 0:
+            print(f"  Number of parameters: {len(wandb_cfg)}")
+            if len(wandb_cfg) > 0:
                 print(f"  Key hyperparameters:")
                 for key in ['optimizer', 'hidden_layers', 'learning_rate', 'batch_size', 
                            'activation', 'l2_lambda', 'num_epochs', 'weight_init', 'dropout_rate']:
-                    if key in cfg_override:
-                        print(f"    {key}: {cfg_override[key]}")
-                print(f"  All keys: {list(cfg_override.keys())}")
+                    if key in wandb_cfg:
+                        print(f"    {key}: {wandb_cfg[key]}")
+                print(f"  All keys: {list(wandb_cfg.keys())}")
             else:
                 print("  WARNING: No config from wandb.config - using defaults!")
             print("=" * 60)
-        else:
-            cfg_override = {}
     except Exception as e:
         print(f"Warning: Could not get wandb.config: {e}")
         import traceback
         traceback.print_exc()
-        cfg_override = {}
     
-    # Start with defaults, then override from wandb.config (sweep)
+    # Command-line args override wandb.config (wandb passes args when using program: in sweep)
+    if cmd_config:
+        print("=" * 60)
+        print("CONFIG FROM COMMAND LINE:")
+        print(f"  Number of parameters: {len(cmd_config)}")
+        for key, value in cmd_config.items():
+            print(f"    {key}: {value}")
+        print("=" * 60)
+        cfg_override.update(cmd_config)  # Command-line overrides wandb.config
+    
+    # Start with defaults, then override from wandb.config and/or command-line
     config = get_default_config()
     for k, v in cfg_override.items():
         config[k] = v
